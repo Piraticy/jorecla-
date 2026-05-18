@@ -1,0 +1,11 @@
+services:
+  finance-pos:
+    build: .
+    ports:
+      - "${HOST_PORT:-5050}:4000"
+    environment:
+      - PORT=4000
+      - JWT_SECRET=change-this-secret
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

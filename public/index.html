@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jorecla Shop</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-bg"></div>
+    <main class="container">
+      <section id="login-view" class="card login-card">
+        <h1>Jorecla Shop</h1>
+        <p>Sign in to record income and expenses.</p>
+        <form id="login-form" class="form-grid">
+          <label>
+            Username
+            <input id="login-username" required />
+          </label>
+          <label>
+            Password
+            <input id="login-password" type="password" required />
+          </label>
+          <button type="submit">Login</button>
+        </form>
+        <p class="hint">Default admin: <b>admin</b> / <b>admin123</b></p>
+        <p id="login-error" class="error"></p>
+      </section>
+
+      <section id="app-view" class="hidden">
+        <header class="card header-card">
+          <div>
+            <h2>Jorecla Shop</h2>
+            <p id="welcome-text"></p>
+          </div>
+          <div class="header-actions">
+            <button id="refresh-btn" class="secondary">Refresh</button>
+            <button id="logout-btn" class="danger">Logout</button>
+          </div>
+        </header>
+
+        <section class="card stats-grid">
+          <article>
+            <h3>Total Income</h3>
+            <p id="total-income">TZS 0</p>
+          </article>
+          <article>
+            <h3>Total Expense</h3>
+            <p id="total-expense">TZS 0</p>
+          </article>
+          <article>
+            <h3>Balance</h3>
+            <p id="total-balance">TZS 0</p>
+          </article>
+        </section>
+
+        <section class="card" id="filters-section">
+          <h3>Filters</h3>
+          <form id="filter-form" class="form-grid row-4">
+            <label>
+              From
+              <input type="date" id="filter-from" />
+            </label>
+            <label>
+              To
+              <input type="date" id="filter-to" />
+            </label>
+            <label>
+              Type
+              <select id="filter-type">
+                <option value="">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            <label>
+              Search
+              <input id="filter-search" placeholder="receipt or description" />
+            </label>
+            <button type="submit">Apply Filters</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>New Transaction</h3>
+          <form id="transaction-form" class="form-grid row-4">
+            <label>
+              Type
+              <select id="txn-type" required>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            <label>
+              Item
+              <select id="txn-item-type" required>
+                <option value="spare">Spare</option>
+                <option value="service">Service</option>
+                <option value="other_income">Other Income</option>
+                <option value="other_expense">Other Expense</option>
+              </select>
+            </label>
+            <label>
+              Category
+              <select id="txn-category" required></select>
+            </label>
+            <label>
+              Transaction Date
+              <input type="date" id="txn-date" required />
+              <span id="txn-date-hint" class="field-hint"></span>
+            </label>
+            <label class="staff-hide-field">
+              Quantity
+              <input type="number" id="txn-qty" min="0" step="0.01" />
+            </label>
+            <label class="staff-hide-field">
+              Unit Price
+              <input type="number" id="txn-unit-price" min="0" step="0.01" />
+            </label>
+            <label>
+              Amount (TZS)
+              <input type="number" id="txn-amount" min="0.01" step="0.01" required />
+            </label>
+            <label class="staff-hide-field">
+              Receipt No (optional)
+              <input id="txn-receipt" />
+            </label>
+            <label class="full-width">
+              Description
+              <input id="txn-description" list="description-suggestions" placeholder="Sold brake pads / paid rent / etc" />
+              <datalist id="description-suggestions"></datalist>
+            </label>
+            <button type="submit">Save Transaction</button>
+          </form>
+          <p id="txn-feedback" class="success"></p>
+        </section>
+
+        <section class="card" id="admin-users-card">
+          <h3>Admin: Create User</h3>
+          <form id="user-form" class="form-grid row-4">
+            <label>
+              Full Name
+              <input id="user-name" required />
+            </label>
+            <label>
+              Username
+              <input id="user-username" required />
+            </label>
+            <label>
+              Password
+              <input id="user-password" type="password" required />
+            </label>
+            <label>
+              Role
+              <select id="user-role" required>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <button type="submit">Create User</button>
+          </form>
+          <p id="user-feedback" class="success"></p>
+          <p id="reset-feedback" class="hint"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card" id="admin-categories-card">
+          <h3>Admin: Create Category</h3>
+          <form id="category-form" class="form-grid row-4">
+            <label>
+              Category Name
+              <input id="category-name" required />
+            </label>
+            <label>
+              Type
+              <select id="category-type" required>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            <button type="submit">Add Category</button>
+          </form>
+          <p id="category-feedback" class="success"></p>
+        </section>
+
+        <section class="card">
+          <h3>Transactions</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Receipt</th>
+                  <th>Type</th>
+                  <th>Item</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>User</th>
+                  <th>Receipt</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
