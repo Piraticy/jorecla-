@@ -13,10 +13,14 @@ A straightforward POS and finance tracking system for:
 - Secure login with `admin` and `staff` roles
 - Admin can create new users
 - Admin can reset staff password and get a new temporary password (for forgot-password support)
+- Admin can edit transactions
+- Admin can edit or remove staff accounts
 - Staff can enter transactions
 - Income and expense categories
 - Staff view is simplified for easier daily use
 - Currency displayed in Tanzanian Shillings (TZS)
+- Default view shows today's transactions for both admin and staff
+- Admin-only archive mode can view older transactions
 - Dashboard totals:
   - total income
   - total expense
@@ -87,12 +91,32 @@ Change this immediately by creating a safer admin account and then disabling/rem
 - `GET /api/auth/me`
 - `GET /api/users` (admin only)
 - `POST /api/users` (admin only)
+- `PUT /api/users/:id` (admin only, staff only)
+- `DELETE /api/users/:id` (admin only, staff only)
 - `POST /api/users/:id/reset-password` (admin only, staff only)
 - `GET /api/categories`
 - `POST /api/categories` (admin only)
 - `GET /api/transactions`
 - `POST /api/transactions`
+- `PUT /api/transactions/:id` (admin only)
 - `GET /api/reports/summary`
+
+## Vercel Deploy (Free Tier)
+
+1. Install Vercel CLI and login.
+2. Deploy:
+
+```bash
+vercel
+```
+
+3. Production deploy:
+
+```bash
+vercel --prod
+```
+
+Important: SQLite on Vercel uses temporary filesystem (`/tmp`), so data can reset. For stable production data, use a managed database (for example Neon, Supabase, or Vercel Postgres).
 
 ## Notes for Deploying on Any Device
 

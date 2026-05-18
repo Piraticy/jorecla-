@@ -30,11 +30,32 @@ function generateTempPassword(length = 10) {
   return out;
 }
 
+function localDateISO(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function resolveDateRange(query, role) {
+  const includeArchive = role === 'admin' && String(query.includeArchive || '0') === '1';
+  let from = query.from ? String(query.from).trim() : '';
+  let to = query.to ? String(query.to).trim() : '';
+
+  if (!includeArchive && !from && !to) {
+    const today = localDateISO();
+    from = today;
+    to = today;
+  }
+
+  return { from, to, includeArchive };
+}
+
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body || {};
 
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+    return res.status(400).json({ error: 'Jina la mtumiaji na nenosiri vinahitajika' });
   }
 
   const user = db
@@ -42,12 +63,12 @@ app.post('/api/auth/login', (req, res) => {
     .get(String(username).trim());
 
   if (!user || !user.active) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({ error: 'Taarifa za kuingia si sahihi' });
   }
 
   const isValid = bcrypt.compareSync(password, user.password_hash);
   if (!isValid) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({ error: 'Taarifa za kuingia si sahihi' });
   }
 
   const safeUser = {
@@ -67,7 +88,7 @@ app.get('/api/auth/me', authenticate, (req, res) => {
     .get(req.user.id);
 
   if (!user || !user.active) {
-    return res.status(401).json({ error: 'User not found or inactive' });
+    return res.status(401).json({ error: 'Mtumiaji hajapatikana au amezimwa' });
   }
 
   return res.json({ user });
@@ -84,17 +105,17 @@ app.post('/api/users', authenticate, requireAdmin, (req, res) => {
   const { name, username, password, role } = req.body || {};
 
   if (!name || !username || !password || !role) {
-    return res.status(400).json({ error: 'name, username, password and role are required' });
+    return res.status(400).json({ error: 'name, username, password na role vinahitajika' });
   }
 
   if (!['admin', 'staff'].includes(role)) {
-    return res.status(400).json({ error: 'role must be admin or staff' });
+    return res.status(400).json({ error: 'role lazima iwe admin au staff' });
   }
 
   const normalizedUsername = String(username).trim().toLowerCase();
   const existing = db.prepare('SELECT id FROM users WHERE username = ? LIMIT 1').get(normalizedUsername);
   if (existing) {
-    return res.status(409).json({ error: 'Username already exists' });
+    return res.status(409).json({ error: 'Username tayari ipo' });
   }
 
   const passwordHash = bcrypt.hashSync(String(password), 10);
@@ -112,7 +133,7 @@ app.post('/api/users', authenticate, requireAdmin, (req, res) => {
 app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res) => {
   const targetId = Number(req.params.id);
   if (!Number.isInteger(targetId) || targetId <= 0) {
-    return res.status(400).json({ error: 'Invalid user id' });
+    return res.status(400).json({ error: 'ID ya mtumiaji si sahihi' });
   }
 
   const target = db
@@ -120,18 +141,18 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res)
     .get(targetId);
 
   if (!target || !target.active) {
-    return res.status(404).json({ error: 'User not found' });
+    return res.status(404).json({ error: 'Mtumiaji hajapatikana' });
   }
 
   if (target.role !== 'staff') {
-    return res.status(400).json({ error: 'Only staff passwords can be reset here' });
+    return res.status(400).json({ error: 'Ni nenosiri la staff pekee linaruhusiwa kubadilishwa hapa' });
   }
 
   const requested = req.body && typeof req.body.newPassword === 'string' ? req.body.newPassword.trim() : '';
   const temporaryPassword = requested || generateTempPassword(10);
 
   if (temporaryPassword.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    return res.status(400).json({ error: 'Nenosiri lazima liwe na angalau herufi 6' });
   }
 
   const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
@@ -146,6 +167,84 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res)
     },
     temporaryPassword
   });
+});
+
+app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
+  const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) {
+    return res.status(400).json({ error: 'ID ya mtumiaji si sahihi' });
+  }
+
+  const target = db
+    .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
+    .get(targetId);
+
+  if (!target) {
+    return res.status(404).json({ error: 'Mtumiaji hajapatikana' });
+  }
+
+  if (target.role !== 'staff') {
+    return res.status(400).json({ error: 'Ni staff pekee wanaoweza kuhaririwa hapa' });
+  }
+
+  const payload = req.body || {};
+  const updates = [];
+  const params = [];
+
+  if (payload.name !== undefined) {
+    const value = String(payload.name || '').trim();
+    if (!value) return res.status(400).json({ error: 'name hairuhusiwi kuwa tupu' });
+    updates.push('name = ?');
+    params.push(value);
+  }
+
+  if (payload.username !== undefined) {
+    const value = String(payload.username || '').trim().toLowerCase();
+    if (!value) return res.status(400).json({ error: 'username hairuhusiwi kuwa tupu' });
+    const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ? LIMIT 1').get(value, target.id);
+    if (existing) return res.status(409).json({ error: 'Username tayari ipo' });
+    updates.push('username = ?');
+    params.push(value);
+  }
+
+  if (payload.active !== undefined) {
+    updates.push('active = ?');
+    params.push(payload.active ? 1 : 0);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'Hakuna taarifa sahihi za kuhariri' });
+  }
+
+  params.push(target.id);
+  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+  const updated = db
+    .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ? LIMIT 1')
+    .get(target.id);
+  return res.json({ user: updated });
+});
+
+app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
+  const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) {
+    return res.status(400).json({ error: 'ID ya mtumiaji si sahihi' });
+  }
+
+  const target = db
+    .prepare('SELECT id, role, active FROM users WHERE id = ? LIMIT 1')
+    .get(targetId);
+
+  if (!target) {
+    return res.status(404).json({ error: 'Mtumiaji hajapatikana' });
+  }
+
+  if (target.role !== 'staff') {
+    return res.status(400).json({ error: 'Ni staff pekee wanaoweza kuondolewa hapa' });
+  }
+
+  db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(target.id);
+  return res.json({ ok: true });
 });
 
 app.get('/api/categories', authenticate, (req, res) => {
@@ -164,11 +263,11 @@ app.get('/api/categories', authenticate, (req, res) => {
 app.post('/api/categories', authenticate, requireAdmin, (req, res) => {
   const { name, type } = req.body || {};
   if (!name || !type) {
-    return res.status(400).json({ error: 'name and type are required' });
+    return res.status(400).json({ error: 'name na type vinahitajika' });
   }
 
   if (!['income', 'expense'].includes(type)) {
-    return res.status(400).json({ error: 'type must be income or expense' });
+    return res.status(400).json({ error: 'type lazima iwe income au expense' });
   }
 
   const result = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)').run(String(name).trim(), type);
@@ -194,20 +293,20 @@ app.post('/api/transactions', authenticate, (req, res) => {
   } = req.body || {};
 
   if (!['income', 'expense'].includes(type)) {
-    return res.status(400).json({ error: 'type must be income or expense' });
+    return res.status(400).json({ error: 'type lazima iwe income au expense' });
   }
 
   if (!['spare', 'service', 'other_expense', 'other_income'].includes(itemType)) {
-    return res.status(400).json({ error: 'Invalid itemType' });
+    return res.status(400).json({ error: 'itemType si sahihi' });
   }
 
   const category = db.prepare('SELECT id, type FROM categories WHERE id = ? LIMIT 1').get(Number(categoryId));
   if (!category) {
-    return res.status(400).json({ error: 'Invalid category' });
+    return res.status(400).json({ error: 'Kundi si sahihi' });
   }
 
   if (category.type !== type) {
-    return res.status(400).json({ error: 'Category type must match transaction type' });
+    return res.status(400).json({ error: 'Aina ya kundi lazima ilingane na aina ya muamala' });
   }
 
   const parsedQuantity = quantity === null || quantity === undefined || quantity === '' ? null : Number(quantity);
@@ -215,13 +314,13 @@ app.post('/api/transactions', authenticate, (req, res) => {
 
   const normalizedAmount = normalizeMoney(amount);
   if (normalizedAmount === null || normalizedAmount <= 0) {
-    return res.status(400).json({ error: 'amount must be greater than 0' });
+    return res.status(400).json({ error: 'Kiasi lazima kiwe zaidi ya 0' });
   }
 
   const effectiveUserId = req.user.role === 'admin' && userId ? Number(userId) : req.user.id;
   const userExists = db.prepare('SELECT id FROM users WHERE id = ? LIMIT 1').get(effectiveUserId);
   if (!userExists) {
-    return res.status(400).json({ error: 'Selected user does not exist' });
+    return res.status(400).json({ error: 'Mtumiaji aliyechaguliwa hayupo' });
   }
 
   const safeReceiptNo = String(receiptNo || '').trim() || `RCPT-${Date.now()}`;
@@ -272,7 +371,8 @@ app.post('/api/transactions', authenticate, (req, res) => {
 });
 
 app.get('/api/transactions', authenticate, (req, res) => {
-  const { type, categoryId, userId, from, to, search } = req.query;
+  const { type, categoryId, userId, search } = req.query;
+  const { from, to } = resolveDateRange(req.query, req.user.role);
 
   const where = [];
   const params = [];
@@ -344,7 +444,8 @@ app.get('/api/transactions', authenticate, (req, res) => {
 });
 
 app.get('/api/reports/summary', authenticate, (req, res) => {
-  const { from, to, userId } = req.query;
+  const { userId } = req.query;
+  const { from, to } = resolveDateRange(req.query, req.user.role);
 
   const where = [];
   const params = [];
@@ -400,6 +501,91 @@ app.get('/api/reports/summary', authenticate, (req, res) => {
     },
     byCategory
   });
+});
+
+app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
+  const transactionId = Number(req.params.id);
+  if (!Number.isInteger(transactionId) || transactionId <= 0) {
+    return res.status(400).json({ error: 'ID ya muamala si sahihi' });
+  }
+
+  const existing = db.prepare('SELECT id FROM transactions WHERE id = ? LIMIT 1').get(transactionId);
+  if (!existing) {
+    return res.status(404).json({ error: 'Muamala haujapatikana' });
+  }
+
+  const { type, itemType, categoryId, description, quantity, unitPrice, amount, receiptNo, transactionDate } = req.body || {};
+
+  if (!['income', 'expense'].includes(type)) {
+    return res.status(400).json({ error: 'type lazima iwe income au expense' });
+  }
+
+  if (!['spare', 'service', 'other_expense', 'other_income'].includes(itemType)) {
+    return res.status(400).json({ error: 'itemType si sahihi' });
+  }
+
+  const category = db.prepare('SELECT id, type FROM categories WHERE id = ? LIMIT 1').get(Number(categoryId));
+  if (!category) {
+    return res.status(400).json({ error: 'Kundi si sahihi' });
+  }
+  if (category.type !== type) {
+    return res.status(400).json({ error: 'Aina ya kundi lazima ilingane na aina ya muamala' });
+  }
+
+  const parsedQuantity = quantity === null || quantity === undefined || quantity === '' ? null : Number(quantity);
+  const parsedUnitPrice = unitPrice === null || unitPrice === undefined || unitPrice === '' ? null : Number(unitPrice);
+
+  const normalizedAmount = normalizeMoney(amount);
+  if (normalizedAmount === null || normalizedAmount <= 0) {
+    return res.status(400).json({ error: 'Kiasi lazima kiwe zaidi ya 0' });
+  }
+
+  const safeReceiptNo = String(receiptNo || '').trim() || `RCPT-${Date.now()}`;
+  const safeDate = String(transactionDate || '').trim() || localDateISO();
+
+  db.prepare(
+    `UPDATE transactions
+     SET type = ?, item_type = ?, category_id = ?, description = ?, quantity = ?, unit_price = ?, amount = ?, receipt_no = ?, transaction_date = ?
+     WHERE id = ?`
+  ).run(
+    type,
+    itemType,
+    Number(categoryId),
+    String(description || '').trim(),
+    Number.isFinite(parsedQuantity) ? parsedQuantity : null,
+    Number.isFinite(parsedUnitPrice) ? parsedUnitPrice : null,
+    normalizedAmount,
+    safeReceiptNo,
+    safeDate,
+    transactionId
+  );
+
+  const transaction = db
+    .prepare(
+      `SELECT
+         t.id,
+         t.type,
+         t.item_type,
+         t.description,
+         t.quantity,
+         t.unit_price,
+         t.amount,
+         t.receipt_no,
+         t.transaction_date,
+         t.created_at,
+         c.id as category_id,
+         c.name as category_name,
+         u.id as user_id,
+         u.name as user_name,
+         u.username as user_username
+       FROM transactions t
+       JOIN categories c ON c.id = t.category_id
+       JOIN users u ON u.id = t.user_id
+       WHERE t.id = ?`
+    )
+    .get(transactionId);
+
+  return res.json({ transaction });
 });
 
 app.get('/api/health', (_req, res) => {

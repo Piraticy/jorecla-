@@ -22,7 +22,7 @@ function authenticate(req, res, next) {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Missing token' });
+    return res.status(401).json({ error: 'Token haipo' });
   }
 
   try {
@@ -30,13 +30,13 @@ function authenticate(req, res, next) {
     req.user = decoded;
     return next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Token si sahihi au imeisha muda' });
   }
 }
 
 function requireAdmin(req, res, next) {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin privileges required' });
+    return res.status(403).json({ error: 'Ruhusa ya admin inahitajika' });
   }
   return next();
 }

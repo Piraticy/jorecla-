@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sw">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,19 +11,19 @@
     <main class="container">
       <section id="login-view" class="card login-card">
         <h1>Jorecla Shop</h1>
-        <p>Sign in to record income and expenses.</p>
+        <p>Ingia kurekodi mapato na matumizi.</p>
         <form id="login-form" class="form-grid">
           <label>
-            Username
+            Jina la mtumiaji
             <input id="login-username" required />
           </label>
           <label>
-            Password
+            Nenosiri
             <input id="login-password" type="password" required />
           </label>
-          <button type="submit">Login</button>
+          <button type="submit">Ingia</button>
         </form>
-        <p class="hint">Default admin: <b>admin</b> / <b>admin123</b></p>
+        <p class="hint">Admin chaguo-msingi: <b>admin</b> / <b>admin123</b></p>
         <p id="login-error" class="error"></p>
       </section>
 
@@ -34,130 +34,134 @@
             <p id="welcome-text"></p>
           </div>
           <div class="header-actions">
-            <button id="refresh-btn" class="secondary">Refresh</button>
-            <button id="logout-btn" class="danger">Logout</button>
+            <button id="refresh-btn" class="secondary">Sasisha</button>
+            <button id="logout-btn" class="danger">Toka</button>
           </div>
         </header>
 
-        <section class="card stats-grid">
+        <section class="card stats-grid" id="stats-card">
           <article>
-            <h3>Total Income</h3>
-            <p id="total-income">TZS 0</p>
+            <h3>Jumla ya Mapato</h3>
+            <p id="total-income">TSh 0</p>
           </article>
           <article>
-            <h3>Total Expense</h3>
-            <p id="total-expense">TZS 0</p>
+            <h3>Jumla ya Matumizi</h3>
+            <p id="total-expense">TSh 0</p>
           </article>
           <article>
-            <h3>Balance</h3>
-            <p id="total-balance">TZS 0</p>
+            <h3>Salio</h3>
+            <p id="total-balance">TSh 0</p>
           </article>
         </section>
 
-        <section class="card" id="filters-section">
-          <h3>Filters</h3>
+        <section class="card" id="admin-archive-card">
+          <h3>Kumbukumbu za Zamani (Admin)</h3>
+          <label class="inline-check">
+            <input id="archive-toggle" type="checkbox" />
+            Tumia kumbukumbu (zidi leo)
+          </label>
           <form id="filter-form" class="form-grid row-4">
             <label>
-              From
+              Kuanzia tarehe
               <input type="date" id="filter-from" />
             </label>
             <label>
-              To
+              Hadi tarehe
               <input type="date" id="filter-to" />
             </label>
             <label>
-              Type
+              Aina
               <select id="filter-type">
-                <option value="">All</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
+                <option value="">Zote</option>
+                <option value="income">Mapato</option>
+                <option value="expense">Matumizi</option>
               </select>
             </label>
             <label>
-              Search
-              <input id="filter-search" placeholder="receipt or description" />
+              Tafuta
+              <input id="filter-search" placeholder="risiti au maelezo" />
             </label>
-            <button type="submit">Apply Filters</button>
+            <button type="submit">Tazama</button>
           </form>
         </section>
 
         <section class="card">
-          <h3>New Transaction</h3>
+          <h3>Muamala Mpya</h3>
           <form id="transaction-form" class="form-grid row-4">
             <label>
-              Type
+              Aina
               <select id="txn-type" required>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
+                <option value="income">Mapato</option>
+                <option value="expense">Matumizi</option>
               </select>
             </label>
             <label>
-              Item
+              Kipengele
               <select id="txn-item-type" required>
-                <option value="spare">Spare</option>
-                <option value="service">Service</option>
-                <option value="other_income">Other Income</option>
-                <option value="other_expense">Other Expense</option>
+                <option value="spare">Vipuri</option>
+                <option value="service">Huduma</option>
+                <option value="other_income">Mapato Mengine</option>
+                <option value="other_expense">Matumizi Mengine</option>
               </select>
             </label>
             <label>
-              Category
+              Kundi
               <select id="txn-category" required></select>
             </label>
             <label>
-              Transaction Date
+              Tarehe ya muamala
               <input type="date" id="txn-date" required />
               <span id="txn-date-hint" class="field-hint"></span>
             </label>
             <label class="staff-hide-field">
-              Quantity
+              Idadi
               <input type="number" id="txn-qty" min="0" step="0.01" />
             </label>
             <label class="staff-hide-field">
-              Unit Price
+              Bei ya moja
               <input type="number" id="txn-unit-price" min="0" step="0.01" />
             </label>
             <label>
-              Amount (TZS)
+              Kiasi (TSh)
               <input type="number" id="txn-amount" min="0.01" step="0.01" required />
             </label>
             <label class="staff-hide-field">
-              Receipt No (optional)
+              Namba ya risiti (hiari)
               <input id="txn-receipt" />
             </label>
             <label class="full-width">
-              Description
-              <input id="txn-description" list="description-suggestions" placeholder="Sold brake pads / paid rent / etc" />
+              Maelezo
+              <input id="txn-description" list="description-suggestions" placeholder="Mfano: Uuzaji wa brake pads" />
               <datalist id="description-suggestions"></datalist>
             </label>
-            <button type="submit">Save Transaction</button>
+            <button type="submit">Hifadhi Muamala</button>
           </form>
           <p id="txn-feedback" class="success"></p>
         </section>
 
         <section class="card" id="admin-users-card">
-          <h3>Admin: Create User</h3>
+          <h3>Admin: Usimamizi wa Staff</h3>
           <form id="user-form" class="form-grid row-4">
             <label>
-              Full Name
+              Jina kamili
               <input id="user-name" required />
             </label>
             <label>
-              Username
+              Jina la mtumiaji
               <input id="user-username" required />
             </label>
             <label>
-              Password
+              Nenosiri
               <input id="user-password" type="password" required />
             </label>
             <label>
-              Role
+              Nafasi
               <select id="user-role" required>
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
               </select>
             </label>
-            <button type="submit">Create User</button>
+            <button type="submit">Tengeneza Mtumiaji</button>
           </form>
           <p id="user-feedback" class="success"></p>
           <p id="reset-feedback" class="hint"></p>
@@ -166,10 +170,11 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Name</th>
+                  <th>Jina</th>
                   <th>Username</th>
-                  <th>Role</th>
-                  <th>Actions</th>
+                  <th>Nafasi</th>
+                  <th>Hali</th>
+                  <th>Vitendo</th>
                 </tr>
               </thead>
               <tbody id="users-table-body"></tbody>
@@ -178,39 +183,39 @@
         </section>
 
         <section class="card" id="admin-categories-card">
-          <h3>Admin: Create Category</h3>
+          <h3>Admin: Tengeneza Kundi</h3>
           <form id="category-form" class="form-grid row-4">
             <label>
-              Category Name
+              Jina la kundi
               <input id="category-name" required />
             </label>
             <label>
-              Type
+              Aina
               <select id="category-type" required>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
+                <option value="income">Mapato</option>
+                <option value="expense">Matumizi</option>
               </select>
             </label>
-            <button type="submit">Add Category</button>
+            <button type="submit">Ongeza Kundi</button>
           </form>
           <p id="category-feedback" class="success"></p>
         </section>
 
         <section class="card">
-          <h3>Transactions</h3>
+          <h3 id="transactions-title">Miamala ya Leo</h3>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Receipt</th>
-                  <th>Type</th>
-                  <th>Item</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>User</th>
-                  <th>Receipt</th>
+                  <th>Tarehe</th>
+                  <th>Risiti</th>
+                  <th>Aina</th>
+                  <th>Kipengele</th>
+                  <th>Kundi</th>
+                  <th>Maelezo</th>
+                  <th>Kiasi</th>
+                  <th>Mtumiaji</th>
+                  <th>Vitendo</th>
                 </tr>
               </thead>
               <tbody id="transactions-table-body"></tbody>

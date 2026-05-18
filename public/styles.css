@@ -1,13 +1,13 @@
 :root {
-  --bg1: #f1f8f4;
-  --bg2: #e3ecf9;
+  --bg1: #edf3f6;
+  --bg2: #dce6ee;
   --card: #ffffff;
-  --text: #17212b;
-  --muted: #607085;
-  --primary: #066b5f;
-  --secondary: #17577c;
-  --danger: #b92d2d;
-  --border: #d8e0e8;
+  --text: #1b2633;
+  --muted: #5f7287;
+  --primary: #0b6e5e;
+  --secondary: #1e5f89;
+  --danger: #be2f2f;
+  --border: #d3dde7;
 }
 
 * {
@@ -26,31 +26,31 @@ body {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 10% 20%, rgba(6, 107, 95, 0.12), transparent 35%),
-    radial-gradient(circle at 90% 0%, rgba(37, 80, 140, 0.1), transparent 32%);
+    radial-gradient(circle at 8% 15%, rgba(11, 110, 94, 0.12), transparent 40%),
+    radial-gradient(circle at 90% 0%, rgba(30, 95, 137, 0.1), transparent 35%);
   pointer-events: none;
 }
 
 .container {
-  max-width: 1260px;
-  margin: 24px auto;
-  padding: 0 16px 30px;
+  max-width: 1240px;
+  margin: 22px auto;
+  padding: 0 14px 28px;
   position: relative;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 12px 28px rgba(5, 35, 45, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 20px rgba(9, 30, 40, 0.06);
 }
 
 h1,
 h2,
 h3 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 p {
@@ -67,18 +67,18 @@ p {
 
 .field-hint {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
 .login-card {
   max-width: 460px;
-  margin: 60px auto;
+  margin: 48px auto;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .form-grid.row-4 {
@@ -97,13 +97,21 @@ label {
   color: var(--muted);
 }
 
+.inline-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+
 input,
 select,
 button {
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 11px 12px;
-  font-size: 0.98rem;
+  border-radius: 10px;
+  padding: 10px 11px;
+  font-size: 0.96rem;
 }
 
 button {
@@ -112,12 +120,6 @@ button {
   color: #fff;
   font-weight: 700;
   border-color: var(--primary);
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-button:hover {
-  transform: translateY(-1px);
-  opacity: 0.94;
 }
 
 button.secondary {
@@ -131,39 +133,38 @@ button.danger {
 }
 
 button.small-btn {
-  padding: 8px 10px;
-  font-size: 0.82rem;
-  border-radius: 10px;
+  padding: 6px 9px;
+  font-size: 0.8rem;
 }
 
 .header-card {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   align-items: center;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .stats-grid article {
-  background: #f6faf8;
+  background: #f3f8f5;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .stats-grid p {
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   font-weight: 700;
 }
 
@@ -180,10 +181,16 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--border);
-  padding: 10px;
+  padding: 9px;
   text-align: left;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .hint {
@@ -192,19 +199,27 @@ td {
 }
 
 .error {
-  color: #b92d2d;
+  color: #be2f2f;
 }
 
 .success {
-  color: #0d6e53;
+  color: #0b6e5e;
 }
 
-body.staff-mode #filters-section,
-body.staff-mode .staff-hide-field {
+body.staff-mode .staff-hide-field,
+body.staff-mode #admin-archive-card,
+body.staff-mode #admin-users-card,
+body.staff-mode #admin-categories-card {
   display: none;
 }
 
-@media (max-width: 1100px) {
+body.staff-mode #stats-card,
+body.staff-mode #stats-card article {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 1050px) {
   .form-grid.row-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -216,13 +231,12 @@ body.staff-mode .staff-hide-field {
 
 @media (max-width: 760px) {
   .container {
-    margin: 12px auto;
-    padding: 0 10px 20px;
+    margin: 10px auto;
+    padding: 0 9px 18px;
   }
 
   .card {
-    padding: 14px;
-    border-radius: 12px;
+    padding: 12px;
   }
 
   .header-card {
@@ -236,7 +250,6 @@ body.staff-mode .staff-hide-field {
 
   .header-actions button {
     flex: 1;
-    min-width: 0;
   }
 
   .form-grid.row-4 {
@@ -245,17 +258,12 @@ body.staff-mode .staff-hide-field {
 
   th,
   td {
-    font-size: 0.86rem;
-    padding: 8px;
-  }
-}
-
-@media (max-width: 420px) {
-  .stats-grid p {
-    font-size: 1.18rem;
+    font-size: 0.84rem;
+    padding: 7px;
   }
 
-  h2 {
-    font-size: 1.45rem;
+  .row-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

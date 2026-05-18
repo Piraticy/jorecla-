@@ -3,7 +3,7 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 
-const dataDir = path.join(__dirname, '..', 'data');
+const dataDir = process.env.VERCEL === '1' ? '/tmp' : path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -69,15 +69,15 @@ function initDb() {
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
   if (categoryCount === 0) {
     const defaultCategories = [
-      ['Spare Sales', 'income'],
-      ['Service Charges', 'income'],
-      ['Other Income', 'income'],
-      ['Purchase of Spares', 'expense'],
-      ['Rent', 'expense'],
-      ['Utilities', 'expense'],
-      ['Transport', 'expense'],
-      ['Salaries', 'expense'],
-      ['Other Expense', 'expense']
+      ['Mauzo ya Spare', 'income'],
+      ['Malipo ya Huduma', 'income'],
+      ['Mapato Mengine', 'income'],
+      ['Ununuzi wa Spare', 'expense'],
+      ['Kodi', 'expense'],
+      ['Huduma (Maji/Umeme)', 'expense'],
+      ['Usafiri', 'expense'],
+      ['Mishahara', 'expense'],
+      ['Matumizi Mengine', 'expense']
     ];
 
     const insertCategory = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)');
@@ -87,6 +87,22 @@ function initDb() {
       }
     });
     insertMany(defaultCategories);
+  }
+
+  const renameMap = [
+    ['Spare Sales', 'Mauzo ya Spare'],
+    ['Service Charges', 'Malipo ya Huduma'],
+    ['Other Income', 'Mapato Mengine'],
+    ['Purchase of Spares', 'Ununuzi wa Spare'],
+    ['Rent', 'Kodi'],
+    ['Utilities', 'Huduma (Maji/Umeme)'],
+    ['Transport', 'Usafiri'],
+    ['Salaries', 'Mishahara'],
+    ['Other Expense', 'Matumizi Mengine']
+  ];
+  const renameStmt = db.prepare('UPDATE categories SET name = ? WHERE name = ?');
+  for (const [oldName, newName] of renameMap) {
+    renameStmt.run(newName, oldName);
   }
 }
 
