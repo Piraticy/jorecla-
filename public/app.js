@@ -300,7 +300,6 @@ function renderTransactions() {
 function renderUsers() {
   el.usersTableBody.innerHTML = state.users
     .map((user) => {
-      const activeText = user.active ? 'Hai' : 'Imezimwa';
       let actions = '<span class="muted">-</span>';
 
       if (user.role === 'staff') {
@@ -311,7 +310,7 @@ function renderUsers() {
         `;
       }
 
-      return `<tr><td>${user.id}</td><td>${escapeHtml(user.name)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.role)}</td><td>${activeText}</td><td class="row-actions">${actions}</td></tr>`;
+      return `<tr><td>${user.id}</td><td>${escapeHtml(user.name)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.role)}</td><td>Hai</td><td class="row-actions">${actions}</td></tr>`;
     })
     .join('');
 
@@ -376,7 +375,7 @@ function renderUsers() {
       try {
         await api(`/api/users/${userId}`, { method: 'DELETE' });
         el.resetFeedback.classList.remove('error');
-        el.resetFeedback.textContent = 'Staff ameondolewa (amezimwa).';
+        el.resetFeedback.textContent = 'Staff ameondolewa kabisa.';
         await loadUsersIfAdmin();
       } catch (error) {
         el.resetFeedback.classList.add('error');
@@ -518,11 +517,6 @@ el.refreshBtn.addEventListener('click', async () => {
 });
 
 el.archiveToggle.addEventListener('change', async () => {
-  el.filterFrom.disabled = !archiveEnabled();
-  el.filterTo.disabled = !archiveEnabled();
-  el.filterType.disabled = !archiveEnabled();
-  el.filterSearch.disabled = !archiveEnabled();
-
   if (!archiveEnabled()) {
     el.filterFrom.value = '';
     el.filterTo.value = '';
@@ -643,11 +637,6 @@ el.categoryForm.addEventListener('submit', async (event) => {
   loadDescriptionHistory();
   renderDescriptionSuggestions();
   startAutoRefresh();
-
-  el.filterFrom.disabled = true;
-  el.filterTo.disabled = true;
-  el.filterType.disabled = true;
-  el.filterSearch.disabled = true;
 
   if (!state.token) return;
 

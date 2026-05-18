@@ -96,7 +96,7 @@ app.get('/api/auth/me', authenticate, (req, res) => {
 
 app.get('/api/users', authenticate, requireAdmin, (req, res) => {
   const users = db
-    .prepare('SELECT id, name, username, role, active, created_at FROM users ORDER BY id DESC')
+    .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE active = 1 ORDER BY id DESC')
     .all();
   return res.json({ users });
 });
@@ -176,7 +176,7 @@ app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
   }
 
   const target = db
-    .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
+    .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? AND active = 1 LIMIT 1')
     .get(targetId);
 
   if (!target) {
@@ -232,7 +232,7 @@ app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
   }
 
   const target = db
-    .prepare('SELECT id, role, active FROM users WHERE id = ? LIMIT 1')
+    .prepare('SELECT id, role, active FROM users WHERE id = ? AND active = 1 LIMIT 1')
     .get(targetId);
 
   if (!target) {
@@ -243,7 +243,14 @@ app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Ni staff pekee wanaoweza kuondolewa hapa' });
   }
 
-  db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(target.id);
+  const runDelete = db.transaction(() => {
+    // Keep historical transactions accessible even after removing staff.
+    db.prepare('UPDATE transactions SET user_id = ? WHERE user_id = ?').run(req.user.id, target.id);
+    db.prepare('UPDATE transactions SET created_by = ? WHERE created_by = ?').run(req.user.id, target.id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
+  });
+  runDelete();
+
   return res.json({ ok: true });
 });
 

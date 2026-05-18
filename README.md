@@ -83,7 +83,7 @@ HOST_PORT=5050
 - Username: `admin`
 - Password: `admin123`
 
-Change this immediately by creating a safer admin account and then disabling/removing the default user in future enhancements.
+<span style="color:red"><strong>Muhimu:</strong> Badilisha taarifa hizi mara moja baada ya kuingia, kwa sababu ni za mwanzo tu.</span>
 
 ## API Overview
 
