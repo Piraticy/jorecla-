@@ -60,7 +60,7 @@ app.post('/api/auth/login', (req, res) => {
 
   const user = db
     .prepare(`SELECT id, name, username, password_hash, role, active FROM users WHERE username = ? LIMIT 1`)
-    .get(String(username).trim());
+    .get(String(username).trim().toLowerCase());
 
   if (!user || !user.active) {
     return res.status(401).json({ error: 'Taarifa za kuingia si sahihi' });

@@ -374,6 +374,8 @@ function renderUsers() {
 
       try {
         await api(`/api/users/${userId}`, { method: 'DELETE' });
+        state.users = state.users.filter((item) => item.id !== userId);
+        renderUsers();
         el.resetFeedback.classList.remove('error');
         el.resetFeedback.textContent = 'Staff ameondolewa kabisa.';
         await loadUsersIfAdmin();
