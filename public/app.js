@@ -62,7 +62,7 @@ const el = {
   transactionsTableBody: document.getElementById('transactions-table-body')
 };
 
-const tanzaniaCurrency = new Intl.NumberFormat('sw-TZ', {
+const tanzaniaCurrency = new Intl.NumberFormat('en-TZ', {
   style: 'currency',
   currency: 'TZS',
   maximumFractionDigits: 0
@@ -89,15 +89,15 @@ function currency(value) {
 }
 
 function typeLabel(type) {
-  return type === 'income' ? 'Mapato' : 'Matumizi';
+  return type === 'income' ? 'Income' : 'Expense';
 }
 
 function itemTypeLabel(itemType) {
   const labels = {
-    spare: 'Vipuri',
-    service: 'Huduma',
-    other_income: 'Mapato Mengine',
-    other_expense: 'Matumizi Mengine'
+    spare: 'Spare',
+    service: 'Service',
+    other_income: 'Other Income',
+    other_expense: 'Other Expense'
   };
   return labels[itemType] || itemType;
 }
@@ -151,7 +151,7 @@ function setSuggestedDate() {
   state.suggestedDate = today;
   state.lastKnownDay = today;
   el.txnDate.value = today;
-  el.txnDateHint.textContent = `Pendekezo la tarehe: ${today}`;
+  el.txnDateHint.textContent = `Suggested date: ${today}`;
 }
 
 function queryForDateFilter() {
@@ -178,7 +178,18 @@ async function api(path, options = {}) {
 
   const response = await fetch(path, { ...options, headers });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Ombi limeshindwa');
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearAuth();
+      document.body.classList.remove('staff-mode');
+      el.appView.classList.add('hidden');
+      el.loginView.classList.remove('hidden');
+      el.loginError.textContent = data.error || 'Session expired. Please log in again.';
+    }
+    throw new Error(data.error || 'Request failed');
+  }
+
   return data;
 }
 
@@ -210,9 +221,9 @@ function applyRoleView() {
 
 function updateTransactionsTitle() {
   if (archiveEnabled()) {
-    el.transactionsTitle.textContent = 'Miamala ya Kumbukumbu';
+    el.transactionsTitle.textContent = 'Archived Transactions';
   } else {
-    el.transactionsTitle.textContent = 'Miamala ya Leo';
+    el.transactionsTitle.textContent = "Today's Transactions";
   }
 }
 
@@ -227,12 +238,9 @@ function renderTransactions() {
 
   el.transactionsTableBody.innerHTML = state.transactions
     .map((tx) => {
-      const actions = [
-        `<button data-receipt="${tx.id}" class="secondary small-btn">Print</button>`
-      ];
-
+      const actions = [`<button data-receipt="${tx.id}" class="secondary small-btn">Print</button>`];
       if (admin) {
-        actions.push(`<button data-edit-transaction="${tx.id}" class="small-btn">Hariri</button>`);
+        actions.push(`<button data-edit-transaction="${tx.id}" class="small-btn">Edit</button>`);
       }
 
       return `
@@ -263,11 +271,11 @@ function renderTransactions() {
       const tx = state.transactions.find((item) => String(item.id) === String(btn.dataset.editTransaction));
       if (!tx) return;
 
-      const amount = window.prompt('Weka kiasi kipya (TSh):', String(tx.amount));
+      const amount = window.prompt('Enter new amount (TSh):', String(tx.amount));
       if (amount === null) return;
-      const description = window.prompt('Weka maelezo mapya:', tx.description || '');
+      const description = window.prompt('Enter new description:', tx.description || '');
       if (description === null) return;
-      const date = window.prompt('Weka tarehe (YYYY-MM-DD):', tx.transaction_date);
+      const date = window.prompt('Enter date (YYYY-MM-DD):', tx.transaction_date);
       if (date === null) return;
 
       try {
@@ -287,7 +295,7 @@ function renderTransactions() {
         });
 
         el.txnFeedback.classList.remove('error');
-        el.txnFeedback.textContent = 'Muamala umehaririwa.';
+        el.txnFeedback.textContent = 'Transaction updated.';
         await Promise.all([loadTransactions(), loadSummary()]);
       } catch (error) {
         el.txnFeedback.classList.add('error');
@@ -304,13 +312,13 @@ function renderUsers() {
 
       if (user.role === 'staff') {
         actions = `
-          <button class="secondary small-btn" data-reset-user="${user.id}" data-username="${escapeHtml(user.username)}">Nenosiri Jipya</button>
-          <button class="small-btn" data-edit-user="${user.id}">Hariri</button>
-          <button class="danger small-btn" data-remove-user="${user.id}">Ondoa</button>
+          <button class="secondary small-btn" data-reset-user="${user.id}" data-username="${escapeHtml(user.username)}">Reset Password</button>
+          <button class="small-btn" data-edit-user="${user.id}">Edit</button>
+          <button class="danger small-btn" data-remove-user="${user.id}">Delete</button>
         `;
       }
 
-      return `<tr><td>${user.id}</td><td>${escapeHtml(user.name)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.role)}</td><td>Hai</td><td class="row-actions">${actions}</td></tr>`;
+      return `<tr><td>${user.id}</td><td>${escapeHtml(user.name)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.role)}</td><td>Active</td><td class="row-actions">${actions}</td></tr>`;
     })
     .join('');
 
@@ -318,7 +326,7 @@ function renderUsers() {
     btn.addEventListener('click', async () => {
       const userId = Number(btn.dataset.resetUser);
       const username = btn.dataset.username;
-      const input = window.prompt(`Weka nenosiri jipya kwa ${username}. Ukiacha wazi, litatengenezwa moja kwa moja.`);
+      const input = window.prompt(`Set a new password for ${username}. Leave blank to auto-generate.`);
       if (input === null) return;
 
       try {
@@ -331,7 +339,7 @@ function renderUsers() {
         });
 
         el.resetFeedback.classList.remove('error');
-        el.resetFeedback.textContent = `Nenosiri jipya la ${data.user.username}: ${data.temporaryPassword}`;
+        el.resetFeedback.textContent = `New password for ${data.user.username}: ${data.temporaryPassword}`;
       } catch (error) {
         el.resetFeedback.classList.add('error');
         el.resetFeedback.textContent = error.message;
@@ -345,9 +353,9 @@ function renderUsers() {
       const user = state.users.find((item) => item.id === userId);
       if (!user) return;
 
-      const newName = window.prompt('Hariri jina la staff:', user.name);
+      const newName = window.prompt('Edit staff name:', user.name);
       if (newName === null) return;
-      const newUsername = window.prompt('Hariri username ya staff:', user.username);
+      const newUsername = window.prompt('Edit staff username:', user.username);
       if (newUsername === null) return;
 
       try {
@@ -357,7 +365,7 @@ function renderUsers() {
         });
 
         el.resetFeedback.classList.remove('error');
-        el.resetFeedback.textContent = 'Taarifa za staff zimehaririwa.';
+        el.resetFeedback.textContent = 'Staff details updated.';
         await loadUsersIfAdmin();
       } catch (error) {
         el.resetFeedback.classList.add('error');
@@ -369,7 +377,7 @@ function renderUsers() {
   el.usersTableBody.querySelectorAll('button[data-remove-user]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const userId = Number(btn.dataset.removeUser);
-      const confirmed = window.confirm('Una uhakika unataka kuondoa staff huyu?');
+      const confirmed = window.confirm('Are you sure you want to delete this staff user?');
       if (!confirmed) return;
 
       try {
@@ -377,7 +385,7 @@ function renderUsers() {
         state.users = state.users.filter((item) => item.id !== userId);
         renderUsers();
         el.resetFeedback.classList.remove('error');
-        el.resetFeedback.textContent = 'Staff ameondolewa kabisa.';
+        el.resetFeedback.textContent = 'Staff user deleted successfully.';
         await loadUsersIfAdmin();
       } catch (error) {
         el.resetFeedback.classList.add('error');
@@ -391,7 +399,7 @@ function printReceipt(tx) {
   const html = `
     <html>
       <head>
-        <title>Risiti ${tx.receipt_no}</title>
+        <title>Receipt ${tx.receipt_no}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
           h2 { margin-bottom: 8px; }
@@ -399,15 +407,15 @@ function printReceipt(tx) {
         </style>
       </head>
       <body>
-        <h2>Risiti - Jorecla Shop</h2>
-        <p><b>Namba ya Risiti:</b> ${escapeHtml(tx.receipt_no)}</p>
-        <p><b>Tarehe:</b> ${escapeHtml(tx.transaction_date)}</p>
-        <p><b>Aina:</b> ${typeLabel(tx.type)}</p>
-        <p><b>Kipengele:</b> ${itemTypeLabel(tx.item_type)}</p>
-        <p><b>Kundi:</b> ${escapeHtml(tx.category_name)}</p>
-        <p><b>Maelezo:</b> ${escapeHtml(tx.description || '')}</p>
-        <p><b>Kiasi:</b> ${currency(tx.amount)}</p>
-        <p><b>Aliyeweka:</b> ${escapeHtml(tx.user_name)}</p>
+        <h2>Receipt - Jorecla Shop</h2>
+        <p><b>Receipt No:</b> ${escapeHtml(tx.receipt_no)}</p>
+        <p><b>Date:</b> ${escapeHtml(tx.transaction_date)}</p>
+        <p><b>Type:</b> ${typeLabel(tx.type)}</p>
+        <p><b>Item:</b> ${itemTypeLabel(tx.item_type)}</p>
+        <p><b>Category:</b> ${escapeHtml(tx.category_name)}</p>
+        <p><b>Description:</b> ${escapeHtml(tx.description || '')}</p>
+        <p><b>Amount:</b> ${currency(tx.amount)}</p>
+        <p><b>Recorded By:</b> ${escapeHtml(tx.user_name)}</p>
       </body>
     </html>
   `;
@@ -460,9 +468,7 @@ function startAutoRefresh() {
     const nowDay = todayISO();
     if (state.lastKnownDay !== nowDay) {
       state.lastKnownDay = nowDay;
-      if (!archiveEnabled()) {
-        setSuggestedDate();
-      }
+      if (!archiveEnabled()) setSuggestedDate();
     }
 
     try {
@@ -525,7 +531,6 @@ el.archiveToggle.addEventListener('change', async () => {
     el.filterType.value = '';
     el.filterSearch.value = '';
   }
-
   await refreshAll();
 });
 
@@ -568,7 +573,7 @@ el.transactionForm.addEventListener('submit', async (event) => {
     });
 
     addDescriptionHistory(description);
-    el.txnFeedback.textContent = 'Muamala umehifadhiwa.';
+    el.txnFeedback.textContent = 'Transaction saved successfully.';
 
     el.transactionForm.reset();
     el.txnType.value = 'income';
@@ -603,7 +608,7 @@ el.userForm.addEventListener('submit', async (event) => {
       })
     });
 
-    el.userFeedback.textContent = 'Mtumiaji ametengenezwa.';
+    el.userFeedback.textContent = 'User created successfully.';
     el.userForm.reset();
     await loadUsersIfAdmin();
   } catch (error) {
@@ -626,7 +631,7 @@ el.categoryForm.addEventListener('submit', async (event) => {
       })
     });
 
-    el.categoryFeedback.textContent = 'Kundi limeongezwa.';
+    el.categoryFeedback.textContent = 'Category added successfully.';
     el.categoryForm.reset();
     await loadCategories();
   } catch (error) {

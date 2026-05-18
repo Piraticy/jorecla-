@@ -83,7 +83,7 @@ HOST_PORT=5050
 - Username: `admin`
 - Password: `admin123`
 
-<span style="color:red"><strong>Muhimu:</strong> Badilisha taarifa hizi mara moja baada ya kuingia, kwa sababu ni za mwanzo tu.</span>
+<span style="color:red"><strong>Important:</strong> Change these credentials immediately after first login because they are default credentials.</span>
 
 ## API Overview
 

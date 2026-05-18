@@ -69,15 +69,15 @@ function initDb() {
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
   if (categoryCount === 0) {
     const defaultCategories = [
-      ['Mauzo ya Spare', 'income'],
-      ['Malipo ya Huduma', 'income'],
-      ['Mapato Mengine', 'income'],
-      ['Ununuzi wa Spare', 'expense'],
-      ['Kodi', 'expense'],
-      ['Huduma (Maji/Umeme)', 'expense'],
-      ['Usafiri', 'expense'],
-      ['Mishahara', 'expense'],
-      ['Matumizi Mengine', 'expense']
+      ['Spare Sales', 'income'],
+      ['Service Charges', 'income'],
+      ['Other Income', 'income'],
+      ['Purchase of Spares', 'expense'],
+      ['Rent', 'expense'],
+      ['Utilities', 'expense'],
+      ['Transport', 'expense'],
+      ['Salaries', 'expense'],
+      ['Other Expense', 'expense']
     ];
 
     const insertCategory = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)');
@@ -90,15 +90,15 @@ function initDb() {
   }
 
   const renameMap = [
-    ['Spare Sales', 'Mauzo ya Spare'],
-    ['Service Charges', 'Malipo ya Huduma'],
-    ['Other Income', 'Mapato Mengine'],
-    ['Purchase of Spares', 'Ununuzi wa Spare'],
-    ['Rent', 'Kodi'],
-    ['Utilities', 'Huduma (Maji/Umeme)'],
-    ['Transport', 'Usafiri'],
-    ['Salaries', 'Mishahara'],
-    ['Other Expense', 'Matumizi Mengine']
+    ['Mauzo ya Spare', 'Spare Sales'],
+    ['Malipo ya Huduma', 'Service Charges'],
+    ['Mapato Mengine', 'Other Income'],
+    ['Ununuzi wa Spare', 'Purchase of Spares'],
+    ['Kodi', 'Rent'],
+    ['Huduma (Maji/Umeme)', 'Utilities'],
+    ['Usafiri', 'Transport'],
+    ['Mishahara', 'Salaries'],
+    ['Matumizi Mengine', 'Other Expense']
   ];
   const renameStmt = db.prepare('UPDATE categories SET name = ? WHERE name = ?');
   for (const [oldName, newName] of renameMap) {

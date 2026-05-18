@@ -1,27 +1,27 @@
 <!DOCTYPE html>
-<html lang="sw">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jorecla Shop</title>
-    <link rel="stylesheet" href="/styles.css?v=20260518c" />
+    <link rel="stylesheet" href="/styles.css?v=20260518d" />
   </head>
   <body>
     <div class="page-bg"></div>
     <main class="container">
       <section id="login-view" class="card login-card">
         <h1>Jorecla Shop</h1>
-        <p>Ingia kurekodi mapato na matumizi.</p>
+        <p>Sign in to record income and expenses.</p>
         <form id="login-form" class="form-grid">
           <label>
-            Jina la mtumiaji
+            Username
             <input id="login-username" required />
           </label>
           <label>
-            Nenosiri
+            Password
             <input id="login-password" type="password" required />
           </label>
-          <button type="submit">Ingia</button>
+          <button type="submit">Login</button>
         </form>
         <p id="login-error" class="error"></p>
       </section>
@@ -33,134 +33,134 @@
             <p id="welcome-text"></p>
           </div>
           <div class="header-actions">
-            <button id="refresh-btn" class="secondary">Sasisha</button>
-            <button id="logout-btn" class="danger">Toka</button>
+            <button id="refresh-btn" class="secondary">Refresh</button>
+            <button id="logout-btn" class="danger">Logout</button>
           </div>
         </header>
 
         <section class="card stats-grid" id="stats-card">
           <article>
-            <h3>Jumla ya Mapato</h3>
+            <h3>Total Income</h3>
             <p id="total-income">TSh 0</p>
           </article>
           <article>
-            <h3>Jumla ya Matumizi</h3>
+            <h3>Total Expense</h3>
             <p id="total-expense">TSh 0</p>
           </article>
           <article>
-            <h3>Salio</h3>
+            <h3>Balance</h3>
             <p id="total-balance">TSh 0</p>
           </article>
         </section>
 
         <section class="card" id="admin-archive-card">
-          <h3>Kumbukumbu za Zamani (Admin)</h3>
+          <h3>Archive (Admin)</h3>
           <label class="inline-check">
             <input id="archive-toggle" type="checkbox" />
-            Tumia kumbukumbu (zidi leo)
+            Enable archive mode (beyond today)
           </label>
           <form id="filter-form" class="form-grid row-4">
             <label>
-              Kuanzia tarehe
+              From date
               <input type="date" id="filter-from" />
             </label>
             <label>
-              Hadi tarehe
+              To date
               <input type="date" id="filter-to" />
             </label>
             <label>
-              Aina
+              Type
               <select id="filter-type">
-                <option value="">Zote</option>
-                <option value="income">Mapato</option>
-                <option value="expense">Matumizi</option>
+                <option value="">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
               </select>
             </label>
             <label>
-              Tafuta
-              <input id="filter-search" placeholder="risiti au maelezo" />
+              Search
+              <input id="filter-search" placeholder="receipt or description" />
             </label>
-            <button type="submit">Tazama</button>
+            <button type="submit">View</button>
           </form>
         </section>
 
         <section class="card">
-          <h3>Muamala Mpya</h3>
+          <h3>New Transaction</h3>
           <form id="transaction-form" class="form-grid row-4">
             <label>
-              Aina
+              Type
               <select id="txn-type" required>
-                <option value="income">Mapato</option>
-                <option value="expense">Matumizi</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
               </select>
             </label>
             <label>
-              Kipengele
+              Item
               <select id="txn-item-type" required>
-                <option value="spare">Vipuri</option>
-                <option value="service">Huduma</option>
-                <option value="other_income">Mapato Mengine</option>
-                <option value="other_expense">Matumizi Mengine</option>
+                <option value="spare">Spare</option>
+                <option value="service">Service</option>
+                <option value="other_income">Other Income</option>
+                <option value="other_expense">Other Expense</option>
               </select>
             </label>
             <label>
-              Kundi
+              Category
               <select id="txn-category" required></select>
             </label>
             <label>
-              Tarehe ya muamala
+              Transaction date
               <input type="date" id="txn-date" required />
               <span id="txn-date-hint" class="field-hint"></span>
             </label>
             <label class="staff-hide-field">
-              Idadi
+              Quantity
               <input type="number" id="txn-qty" min="0" step="0.01" />
             </label>
             <label class="staff-hide-field">
-              Bei ya moja
+              Unit price
               <input type="number" id="txn-unit-price" min="0" step="0.01" />
             </label>
             <label>
-              Kiasi (TSh)
+              Amount (TSh)
               <input type="number" id="txn-amount" min="0.01" step="0.01" required />
             </label>
             <label class="staff-hide-field">
-              Namba ya risiti (hiari)
+              Receipt number (optional)
               <input id="txn-receipt" />
             </label>
             <label class="full-width">
-              Maelezo
-              <input id="txn-description" list="description-suggestions" placeholder="Mfano: Uuzaji wa brake pads" />
+              Description
+              <input id="txn-description" list="description-suggestions" placeholder="Example: Brake pads sale" />
               <datalist id="description-suggestions"></datalist>
             </label>
-            <button type="submit">Hifadhi Muamala</button>
+            <button type="submit">Save Transaction</button>
           </form>
           <p id="txn-feedback" class="success"></p>
         </section>
 
         <section class="card" id="admin-users-card">
-          <h3>Admin: Usimamizi wa Staff</h3>
+          <h3>Admin: Staff Management</h3>
           <form id="user-form" class="form-grid row-4">
             <label>
-              Jina kamili
+              Full name
               <input id="user-name" required />
             </label>
             <label>
-              Jina la mtumiaji
+              Username
               <input id="user-username" required />
             </label>
             <label>
-              Nenosiri
+              Password
               <input id="user-password" type="password" required />
             </label>
             <label>
-              Nafasi
+              Role
               <select id="user-role" required>
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
               </select>
             </label>
-            <button type="submit">Tengeneza Mtumiaji</button>
+            <button type="submit">Create User</button>
           </form>
           <p id="user-feedback" class="success"></p>
           <p id="reset-feedback" class="hint"></p>
@@ -169,11 +169,11 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Jina</th>
+                  <th>Name</th>
                   <th>Username</th>
-                  <th>Nafasi</th>
-                  <th>Hali</th>
-                  <th>Vitendo</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="users-table-body"></tbody>
@@ -182,39 +182,39 @@
         </section>
 
         <section class="card" id="admin-categories-card">
-          <h3>Admin: Tengeneza Kundi</h3>
+          <h3>Admin: Create Category</h3>
           <form id="category-form" class="form-grid row-4">
             <label>
-              Jina la kundi
+              Category name
               <input id="category-name" required />
             </label>
             <label>
-              Aina
+              Type
               <select id="category-type" required>
-                <option value="income">Mapato</option>
-                <option value="expense">Matumizi</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
               </select>
             </label>
-            <button type="submit">Ongeza Kundi</button>
+            <button type="submit">Add Category</button>
           </form>
           <p id="category-feedback" class="success"></p>
         </section>
 
         <section class="card">
-          <h3 id="transactions-title">Miamala ya Leo</h3>
+          <h3 id="transactions-title">Today's Transactions</h3>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Tarehe</th>
-                  <th>Risiti</th>
-                  <th>Aina</th>
-                  <th>Kipengele</th>
-                  <th>Kundi</th>
-                  <th>Maelezo</th>
-                  <th>Kiasi</th>
-                  <th>Mtumiaji</th>
-                  <th>Vitendo</th>
+                  <th>Date</th>
+                  <th>Receipt</th>
+                  <th>Type</th>
+                  <th>Item</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>User</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="transactions-table-body"></tbody>
@@ -223,6 +223,6 @@
         </section>
       </section>
     </main>
-    <script src="/app.js?v=20260518c"></script>
+    <script src="/app.js?v=20260518d"></script>
   </body>
 </html>
