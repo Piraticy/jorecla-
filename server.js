@@ -51,6 +51,27 @@ function resolveDateRange(query, role) {
   return { from, to, includeArchive };
 }
 
+function ensureSessionUserRow(sessionUser) {
+  const existing = db
+    .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
+    .get(sessionUser.id);
+
+  if (existing && existing.active) return existing;
+
+  const wasDeleted = db.prepare('SELECT user_id FROM deleted_users WHERE user_id = ? LIMIT 1').get(sessionUser.id);
+  if (wasDeleted) return null;
+
+  const fallbackHash = bcrypt.hashSync(`session-${sessionUser.id}-${sessionUser.username}`, 10);
+  db.prepare(
+    `INSERT OR REPLACE INTO users (id, name, username, password_hash, role, active)
+     VALUES (?, ?, ?, ?, ?, 1)`
+  ).run(sessionUser.id, sessionUser.name, String(sessionUser.username).toLowerCase(), fallbackHash, sessionUser.role);
+
+  return db
+    .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
+    .get(sessionUser.id);
+}
+
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -83,6 +104,11 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.get('/api/auth/me', authenticate, (req, res) => {
+  const recovered = ensureSessionUserRow(req.user);
+  if (!recovered) {
+    return res.status(401).json({ error: 'Session is invalid. Please log in again.' });
+  }
+
   const user = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ? LIMIT 1')
     .get(req.user.id);
@@ -247,6 +273,7 @@ app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
     // Keep historical transactions accessible even after removing staff.
     db.prepare('UPDATE transactions SET user_id = ? WHERE user_id = ?').run(req.user.id, target.id);
     db.prepare('UPDATE transactions SET created_by = ? WHERE created_by = ?').run(req.user.id, target.id);
+    db.prepare('INSERT OR REPLACE INTO deleted_users (user_id, username) VALUES (?, ?)').run(target.id, null);
     db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
   });
   runDelete();
@@ -325,9 +352,16 @@ app.post('/api/transactions', authenticate, (req, res) => {
   }
 
   const effectiveUserId = req.user.role === 'admin' && userId ? Number(userId) : req.user.id;
-  const userExists = db.prepare('SELECT id FROM users WHERE id = ? LIMIT 1').get(effectiveUserId);
-  if (!userExists) {
-    return res.status(401).json({ error: 'Session is invalid. Please log in again.' });
+  if (effectiveUserId === req.user.id) {
+    const recovered = ensureSessionUserRow(req.user);
+    if (!recovered) {
+      return res.status(401).json({ error: 'Session is invalid. Please log in again.' });
+    }
+  } else {
+    const userExists = db.prepare('SELECT id FROM users WHERE id = ? LIMIT 1').get(effectiveUserId);
+    if (!userExists) {
+      return res.status(400).json({ error: 'Selected user does not exist' });
+    }
   }
 
   const safeReceiptNo = String(receiptNo || '').trim() || `RCPT-${Date.now()}`;

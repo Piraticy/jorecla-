@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Jorecla Shop">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b6e5e" />
+      <stop offset="100%" stop-color="#1e5f89" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#g)" />
+  <path d="M122 170h268l-20 138H142z" fill="#fff" opacity="0.94"/>
+  <circle cx="196" cy="348" r="24" fill="#fff"/>
+  <circle cx="316" cy="348" r="24" fill="#fff"/>
+  <text x="256" y="258" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="120" font-weight="700" fill="#0b6e5e">J</text>
+</svg>

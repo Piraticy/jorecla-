@@ -51,6 +51,12 @@ function initDb() {
       FOREIGN KEY(category_id) REFERENCES categories(id)
     );
 
+    CREATE TABLE IF NOT EXISTS deleted_users (
+      user_id INTEGER PRIMARY KEY,
+      username TEXT,
+      deleted_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
     CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
     CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
