@@ -1,13 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Sora:wght@600;700&display=swap');
+
 :root {
-  --bg1: #edf3f6;
-  --bg2: #dce6ee;
-  --card: #ffffff;
-  --text: #1b2633;
-  --muted: #5f7287;
+  --bg1: #e8f0f2;
+  --bg2: #d4e1ea;
+  --surface: #ffffff;
+  --surface-soft: #f3f8fa;
+  --text: #152233;
+  --muted: #5a6f86;
   --primary: #0b6e5e;
-  --secondary: #1e5f89;
-  --danger: #be2f2f;
-  --border: #d3dde7;
+  --primary-2: #0f8d78;
+  --secondary: #1d628f;
+  --danger: #c63838;
+  --border: #d3dfe8;
+  --shadow: 0 16px 34px rgba(16, 44, 63, 0.12);
 }
 
 * {
@@ -16,41 +21,50 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
-  background: linear-gradient(140deg, var(--bg1), var(--bg2));
-  min-height: 100vh;
+  font-family: Manrope, "Segoe UI", Tahoma, sans-serif;
+  background: linear-gradient(145deg, var(--bg1), var(--bg2));
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3,
+button {
+  font-family: Sora, Manrope, sans-serif;
 }
 
 .page-bg {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 8% 15%, rgba(11, 110, 94, 0.12), transparent 40%),
-    radial-gradient(circle at 90% 0%, rgba(30, 95, 137, 0.1), transparent 35%);
+    radial-gradient(circle at 15% 15%, rgba(11, 110, 94, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 5%, rgba(29, 98, 143, 0.14), transparent 32%),
+    radial-gradient(circle at 50% 100%, rgba(20, 120, 170, 0.08), transparent 45%);
   pointer-events: none;
 }
 
 .container {
-  max-width: 1240px;
-  margin: 22px auto;
-  padding: 0 14px 28px;
+  max-width: 1200px;
+  margin: 18px auto;
+  padding: 0 12px 30px;
   position: relative;
 }
 
 .card {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 16px;
   margin-bottom: 14px;
-  box-shadow: 0 8px 20px rgba(9, 30, 40, 0.06);
+  box-shadow: var(--shadow);
 }
 
 h1,
 h2,
 h3 {
   margin: 0 0 8px;
+  letter-spacing: -0.01em;
 }
 
 p {
@@ -61,18 +75,30 @@ p {
   display: none;
 }
 
-.muted {
+.muted,
+.hint,
+.field-hint {
   color: var(--muted);
 }
 
 .field-hint {
-  color: var(--muted);
   font-size: 0.82rem;
 }
 
 .login-card {
-  max-width: 460px;
-  margin: 48px auto;
+  width: min(96vw, 640px);
+  margin: min(9vh, 90px) auto 20px;
+  border: none;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 253, 255, 0.9));
+  box-shadow: 0 26px 50px rgba(10, 36, 55, 0.18);
+  padding: 26px 22px;
+}
+
+.login-card h1 {
+  font-size: clamp(2.1rem, 7vw, 3rem);
+  margin-bottom: 10px;
 }
 
 .form-grid {
@@ -109,32 +135,37 @@ input,
 select,
 button {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 11px;
-  font-size: 0.96rem;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 0.97rem;
+}
+
+input,
+select {
+  background: #fff;
 }
 
 button {
   cursor: pointer;
-  background: var(--primary);
   color: #fff;
   font-weight: 700;
-  border-color: var(--primary);
+  border: 0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow: 0 10px 18px rgba(11, 110, 94, 0.24);
 }
 
 button.secondary {
-  background: var(--secondary);
-  border-color: var(--secondary);
+  background: linear-gradient(135deg, #236f9e, var(--secondary));
 }
 
 button.danger {
-  background: var(--danger);
-  border-color: var(--danger);
+  background: linear-gradient(135deg, #d64848, var(--danger));
 }
 
 button.small-btn {
-  padding: 6px 9px;
+  padding: 7px 10px;
   font-size: 0.8rem;
+  box-shadow: none;
 }
 
 .header-card {
@@ -157,15 +188,15 @@ button.small-btn {
 }
 
 .stats-grid article {
-  background: #f3f8f5;
+  background: linear-gradient(180deg, #f7fcfa, var(--surface-soft));
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 14px;
+  padding: 12px;
 }
 
 .stats-grid p {
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
 }
 
 .table-wrap {
@@ -193,13 +224,8 @@ td {
   align-items: center;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
 .error {
-  color: #be2f2f;
+  color: #c33131;
 }
 
 .success {
@@ -215,8 +241,26 @@ body.staff-mode #admin-categories-card {
 
 body.staff-mode #stats-card,
 body.staff-mode #stats-card article {
-  border-radius: 0;
+  border-radius: 10px;
   box-shadow: none;
+}
+
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 21, 34, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+  padding: 18px;
+}
+
+.update-card {
+  width: min(92vw, 440px);
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(7, 21, 34, 0.32);
 }
 
 @media (max-width: 1050px) {
@@ -232,27 +276,32 @@ body.staff-mode #stats-card article {
 @media (max-width: 760px) {
   .container {
     margin: 0 auto;
-    padding: 10px 10px calc(20px + env(safe-area-inset-bottom));
+    padding: max(10px, env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom));
   }
 
   .card {
     padding: 14px;
-    border-radius: 14px;
+    border-radius: 16px;
   }
 
-  #login-view {
-    margin-top: max(16px, env(safe-area-inset-top));
+  .login-card {
+    width: 100%;
+    min-height: min(84dvh, 640px);
+    margin: 0;
+    display: grid;
+    align-content: center;
+    padding: 30px 18px;
   }
 
   #app-view {
-    padding-bottom: 80px;
+    padding-bottom: 92px;
   }
 
   .header-card {
     position: sticky;
     top: 8px;
     z-index: 10;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(5px);
     flex-direction: column;
     align-items: stretch;
   }
@@ -263,20 +312,13 @@ body.staff-mode #stats-card article {
     grid-template-columns: 1fr 1fr;
   }
 
-  .header-actions button {
-    width: 100%;
-    min-height: 44px;
-  }
-
+  .header-actions button,
   input,
   select,
   button {
-    min-height: 44px;
+    width: 100%;
+    min-height: 46px;
     font-size: 1rem;
-  }
-
-  .stats-grid p {
-    font-size: 1.6rem;
   }
 
   .form-grid.row-4 {
@@ -284,20 +326,18 @@ body.staff-mode #stats-card article {
     gap: 12px;
   }
 
-  th,
-  td {
-    font-size: 0.84rem;
-    padding: 7px;
+  .stats-grid p {
+    font-size: 1.62rem;
+  }
+
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   .row-actions {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .table-wrap {
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    overflow: hidden;
   }
 }

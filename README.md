@@ -28,6 +28,8 @@ A straightforward POS and finance tracking system for:
 - Filters by date, type, and search text
 - Description input remembers previously used transaction names for faster entry
 - Basic printable receipt per transaction
+- Built-in version check that prompts/forces refresh when a newer deployment is detected
+- Mobile-first polished UI with PWA metadata and home-screen icon support
 - SQLite database for persistent local data
 
 ## Tech Stack
@@ -100,6 +102,7 @@ HOST_PORT=5050
 - `POST /api/transactions`
 - `PUT /api/transactions/:id` (admin only)
 - `GET /api/reports/summary`
+- `GET /api/version`
 
 ## Vercel Deploy (Free Tier)
 

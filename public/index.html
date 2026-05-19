@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260518e" />
+    <link rel="stylesheet" href="/styles.css?v=20260519a" />
   </head>
   <body>
     <div class="page-bg"></div>
@@ -230,6 +230,16 @@
         </section>
       </section>
     </main>
-    <script src="/app.js?v=20260518e"></script>
+
+    <div id="update-overlay" class="update-overlay hidden">
+      <div class="update-card">
+        <h3>Update Available</h3>
+        <p>A new version has been deployed. Refresh now to continue.</p>
+        <p id="update-countdown" class="hint"></p>
+        <button id="update-now-btn">Update Now</button>
+      </div>
+    </div>
+
+    <script src="/app.js?v=20260519a"></script>
   </body>
 </html>

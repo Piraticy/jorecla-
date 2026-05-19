@@ -8,7 +8,8 @@ const state = {
   transactions: [],
   descriptionHistory: [],
   suggestedDate: '',
-  lastKnownDay: ''
+  lastKnownDay: '',
+  appVersion: ''
 };
 
 const el = {
@@ -59,7 +60,10 @@ const el = {
   categoryType: document.getElementById('category-type'),
   categoryFeedback: document.getElementById('category-feedback'),
   transactionsTitle: document.getElementById('transactions-title'),
-  transactionsTableBody: document.getElementById('transactions-table-body')
+  transactionsTableBody: document.getElementById('transactions-table-body'),
+  updateOverlay: document.getElementById('update-overlay'),
+  updateCountdown: document.getElementById('update-countdown'),
+  updateNowBtn: document.getElementById('update-now-btn')
 };
 
 const tanzaniaCurrency = new Intl.NumberFormat('en-TZ', {
@@ -170,6 +174,43 @@ function queryForDateFilter() {
   }
 
   return query;
+}
+
+function forceReload() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('reload', String(Date.now()));
+  window.location.replace(url.toString());
+}
+
+async function checkVersionOnce() {
+  try {
+    const response = await fetch(`/api/version?ts=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.version) return;
+
+    if (!state.appVersion) {
+      state.appVersion = data.version;
+      return;
+    }
+
+    if (state.appVersion !== data.version) {
+      el.updateOverlay.classList.remove('hidden');
+      let seconds = 12;
+      el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
+      const timer = setInterval(() => {
+        seconds -= 1;
+        if (seconds <= 0) {
+          clearInterval(timer);
+          forceReload();
+          return;
+        }
+        el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
+      }, 1000);
+    }
+  } catch (_error) {
+    // no-op
+  }
 }
 
 async function api(path, options = {}) {
@@ -477,6 +518,8 @@ function startAutoRefresh() {
       // no-op
     }
   }, 60000);
+
+  setInterval(checkVersionOnce, 45000);
 }
 
 async function bootstrapApp() {
@@ -644,6 +687,9 @@ el.categoryForm.addEventListener('submit', async (event) => {
   loadDescriptionHistory();
   renderDescriptionSuggestions();
   startAutoRefresh();
+  checkVersionOnce();
+
+  el.updateNowBtn.addEventListener('click', forceReload);
 
   if (!state.token) return;
 

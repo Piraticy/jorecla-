@@ -3,11 +3,17 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const packageJson = require('./package.json');
 const { db, initDb } = require('./src/db');
 const { signToken, authenticate, requireAdmin } = require('./src/auth');
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
+const buildVersion =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.RENDER_GIT_COMMIT ||
+  packageJson.version;
 
 initDb();
 
@@ -631,6 +637,13 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   return res.json({ ok: true, time: new Date().toISOString() });
+});
+
+app.get('/api/version', (_req, res) => {
+  return res.json({
+    version: buildVersion,
+    app: packageJson.name
+  });
 });
 
 app.use((_req, res) => {
