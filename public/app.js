@@ -255,41 +255,9 @@ async function handleUpdateNowClick(event) {
 
 async function checkVersionOnce() {
   try {
-    // Keep update prompt on login view only.
-    if (el.loginView.classList.contains('hidden')) {
-      hideUpdateOverlay();
-      return;
-    }
-
-    const response = await fetch(`/api/version?ts=${Date.now()}`, { cache: 'no-store' });
-    if (!response.ok) return;
-    const data = await response.json();
-    if (!data.version) return;
-
-    if (!state.appVersion) {
-      state.appVersion = data.version;
-      return;
-    }
-
-    state.latestVersion = data.version;
-    const ackVersion = localStorage.getItem(ACK_UPDATE_VERSION_KEY) || '';
-
-    if (state.appVersion === state.latestVersion) {
-      if (ackVersion) localStorage.removeItem(ACK_UPDATE_VERSION_KEY);
-      hideUpdateOverlay();
-      return;
-    }
-
-    if (ackVersion && ackVersion === state.latestVersion) {
-      hideUpdateOverlay();
-      return;
-    }
-
-    if (state.appVersion !== state.latestVersion) {
-      showUpdateOverlay();
-    } else {
-      hideUpdateOverlay();
-    }
+    // Update popup disabled to prevent sticky modal regressions.
+    hideUpdateOverlay();
+    return;
   } catch (_error) {
     // no-op
   }
@@ -304,13 +272,20 @@ async function api(path, options = {}) {
 
   if (!response.ok) {
     if (response.status === 401) {
-      clearAuth();
-      document.body.classList.remove('staff-mode');
-      hideUpdateOverlay();
-      el.appView.classList.add('hidden');
-      el.loginView.classList.remove('hidden');
-      applyPageMode();
-      el.loginError.textContent = data.error || 'Session expired. Please log in again.';
+      if (state.token) {
+        clearAuth();
+        document.body.classList.remove('staff-mode');
+        hideUpdateOverlay();
+        el.appView.classList.add('hidden');
+        el.loginView.classList.remove('hidden');
+        applyPageMode();
+        const message = String(data.error || '').toLowerCase();
+        if (message && !message.includes('missing token')) {
+          el.loginError.textContent = data.error;
+        } else {
+          el.loginError.textContent = 'Session expired. Please log in again.';
+        }
+      }
     }
     throw new Error(data.error || 'Request failed');
   }
@@ -590,6 +565,8 @@ async function refreshAll() {
 
 function startAutoRefresh() {
   setInterval(async () => {
+    if (!state.token) return;
+
     const nowDay = todayISO();
     if (state.lastKnownDay !== nowDay) {
       state.lastKnownDay = nowDay;
