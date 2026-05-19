@@ -9,7 +9,10 @@ const state = {
   descriptionHistory: [],
   suggestedDate: '',
   lastKnownDay: '',
-  appVersion: ''
+  appVersion: '',
+  latestVersion: '',
+  updateTimer: null,
+  isUpdatingNow: false
 };
 
 const el = {
@@ -176,10 +179,59 @@ function queryForDateFilter() {
   return query;
 }
 
+function hideUpdateOverlay() {
+  el.updateOverlay.classList.add('hidden');
+  el.updateCountdown.textContent = '';
+  if (state.updateTimer) {
+    clearInterval(state.updateTimer);
+    state.updateTimer = null;
+  }
+}
+
 function forceReload() {
   const url = new URL(window.location.href);
   url.searchParams.set('reload', String(Date.now()));
   window.location.replace(url.toString());
+}
+
+function showUpdateOverlay() {
+  if (!el.updateOverlay.classList.contains('hidden')) return;
+  el.updateOverlay.classList.remove('hidden');
+  let seconds = 12;
+  el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
+
+  state.updateTimer = setInterval(() => {
+    seconds -= 1;
+    if (seconds <= 0) {
+      clearInterval(state.updateTimer);
+      state.updateTimer = null;
+      forceReload();
+      return;
+    }
+    el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
+  }, 1000);
+}
+
+async function handleUpdateNowClick() {
+  if (state.isUpdatingNow) return;
+  state.isUpdatingNow = true;
+  hideUpdateOverlay();
+
+  const originalText = el.updateNowBtn.textContent;
+  el.updateNowBtn.disabled = true;
+  el.updateNowBtn.textContent = 'Updating...';
+
+  setTimeout(() => {
+    // Fallback in case reload is blocked by browser/PWA shell.
+    if (state.isUpdatingNow) {
+      state.isUpdatingNow = false;
+      el.updateNowBtn.disabled = false;
+      el.updateNowBtn.textContent = originalText;
+      hideUpdateOverlay();
+    }
+  }, 3000);
+
+  forceReload();
 }
 
 async function checkVersionOnce() {
@@ -194,19 +246,12 @@ async function checkVersionOnce() {
       return;
     }
 
-    if (state.appVersion !== data.version) {
-      el.updateOverlay.classList.remove('hidden');
-      let seconds = 12;
-      el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
-      const timer = setInterval(() => {
-        seconds -= 1;
-        if (seconds <= 0) {
-          clearInterval(timer);
-          forceReload();
-          return;
-        }
-        el.updateCountdown.textContent = `Auto update in ${seconds}s...`;
-      }, 1000);
+    state.latestVersion = data.version;
+
+    if (state.appVersion !== state.latestVersion) {
+      showUpdateOverlay();
+    } else {
+      hideUpdateOverlay();
     }
   } catch (_error) {
     // no-op
@@ -689,7 +734,7 @@ el.categoryForm.addEventListener('submit', async (event) => {
   startAutoRefresh();
   checkVersionOnce();
 
-  el.updateNowBtn.addEventListener('click', forceReload);
+  el.updateNowBtn.addEventListener('click', handleUpdateNowClick);
 
   if (!state.token) return;
 
