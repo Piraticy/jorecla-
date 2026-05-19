@@ -189,6 +189,15 @@ function hideUpdateOverlay() {
   }
 }
 
+function applyPageMode() {
+  const showingLogin = !el.loginView.classList.contains('hidden');
+  if (showingLogin) {
+    document.body.classList.add('login-mode');
+  } else {
+    document.body.classList.remove('login-mode');
+  }
+}
+
 function forceReload() {
   const url = new URL(window.location.href);
   url.searchParams.set('reload', String(Date.now()));
@@ -196,6 +205,7 @@ function forceReload() {
 }
 
 function showUpdateOverlay() {
+  if (!state.token || !el.loginView.classList.contains('hidden')) return;
   if (!el.updateOverlay.classList.contains('hidden')) return;
   el.updateOverlay.classList.remove('hidden');
   let seconds = 12;
@@ -213,7 +223,11 @@ function showUpdateOverlay() {
   }, 1000);
 }
 
-async function handleUpdateNowClick() {
+async function handleUpdateNowClick(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   if (state.isUpdatingNow) return;
   state.isUpdatingNow = true;
   if (state.latestVersion) {
@@ -241,6 +255,11 @@ async function handleUpdateNowClick() {
 
 async function checkVersionOnce() {
   try {
+    if (!state.token || !el.loginView.classList.contains('hidden')) {
+      hideUpdateOverlay();
+      return;
+    }
+
     const response = await fetch(`/api/version?ts=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
@@ -286,8 +305,10 @@ async function api(path, options = {}) {
     if (response.status === 401) {
       clearAuth();
       document.body.classList.remove('staff-mode');
+      hideUpdateOverlay();
       el.appView.classList.add('hidden');
       el.loginView.classList.remove('hidden');
+      applyPageMode();
       el.loginError.textContent = data.error || 'Session expired. Please log in again.';
     }
     throw new Error(data.error || 'Request failed');
@@ -595,6 +616,7 @@ async function bootstrapApp() {
 
   el.loginView.classList.add('hidden');
   el.appView.classList.remove('hidden');
+  applyPageMode();
 }
 
 el.loginForm.addEventListener('submit', async (event) => {
@@ -613,6 +635,7 @@ el.loginForm.addEventListener('submit', async (event) => {
     setAuth(data.token, data.user);
     await bootstrapApp();
     el.loginForm.reset();
+    applyPageMode();
   } catch (error) {
     el.loginError.textContent = error.message;
   }
@@ -621,8 +644,10 @@ el.loginForm.addEventListener('submit', async (event) => {
 el.logoutBtn.addEventListener('click', () => {
   clearAuth();
   document.body.classList.remove('staff-mode');
+  hideUpdateOverlay();
   el.appView.classList.add('hidden');
   el.loginView.classList.remove('hidden');
+  applyPageMode();
 });
 
 el.refreshBtn.addEventListener('click', async () => {
@@ -750,20 +775,16 @@ el.categoryForm.addEventListener('submit', async (event) => {
   renderDescriptionSuggestions();
   startAutoRefresh();
   checkVersionOnce();
+  applyPageMode();
 
   window.forceAppUpdate = handleUpdateNowClick;
   el.updateNowBtn.onclick = handleUpdateNowClick;
-  el.updateNowBtn.addEventListener('click', handleUpdateNowClick);
-  document.addEventListener('click', (event) => {
-    const target = event.target;
-    if (target && target.id === 'update-now-btn') {
-      handleUpdateNowClick();
-    }
-  });
 
   if (!state.token) return;
 
   bootstrapApp().catch(() => {
     clearAuth();
+    hideUpdateOverlay();
+    applyPageMode();
   });
 })();

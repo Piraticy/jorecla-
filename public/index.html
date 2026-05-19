@@ -11,9 +11,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260519c" />
+    <link rel="stylesheet" href="/styles.css?v=20260519d" />
   </head>
-  <body>
+  <body class="login-mode">
     <div class="page-bg"></div>
     <main class="container">
       <section id="login-view" class="card login-card">
@@ -236,10 +236,16 @@
         <h3>Update Available</h3>
         <p>A new version has been deployed. Refresh now to continue.</p>
         <p id="update-countdown" class="hint"></p>
-        <button id="update-now-btn">Update Now</button>
+        <button
+          id="update-now-btn"
+          type="button"
+          onclick="(function(btn){if(window.forceAppUpdate){window.forceAppUpdate();return;}var ov=document.getElementById('update-overlay');if(ov){ov.classList.add('hidden');ov.style.display='none';}btn.disabled=true;btn.textContent='Updating...';window.location.replace(window.location.pathname+'?reload='+Date.now());})(this)"
+        >
+          Update Now
+        </button>
       </div>
     </div>
 
-    <script src="/app.js?v=20260519c"></script>
+    <script src="/app.js?v=20260519d"></script>
   </body>
 </html>
