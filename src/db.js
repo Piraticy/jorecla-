@@ -7,12 +7,23 @@ const isVercel = process.env.VERCEL === '1';
 const dataDir = isVercel ? '/tmp' : path.join(__dirname, '..', 'data');
 const dbPath = path.join(dataDir, 'pos.db');
 
-const blobEnabled = isVercel && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const blobEnabled = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const blobPathname = process.env.BLOB_DB_PATH || 'jorecla/pos.db';
+const blobAccess = process.env.BLOB_ACCESS === 'public' ? 'public' : 'private';
 
 let dbInstance = null;
 let backupTimer = null;
 let backupInFlight = null;
+const storageStatus = {
+  blobEnabled,
+  blobPathname,
+  blobAccess,
+  restoredFromBlob: false,
+  lastRestoreAt: '',
+  lastBackupAt: '',
+  lastBackupOk: false,
+  lastError: ''
+};
 
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -22,22 +33,21 @@ async function restoreDbFromBlob() {
   if (!blobEnabled) return false;
 
   try {
-    const { list } = require('@vercel/blob');
-    const listed = await list({ prefix: blobPathname, limit: 1000 });
-    const blobs = listed && Array.isArray(listed.blobs) ? listed.blobs : [];
+    const { get } = require('@vercel/blob');
+    const result = await get(blobPathname, { access: blobAccess });
+    if (!result || !result.stream) return false;
 
-    const exact = blobs.find((item) => item.pathname === blobPathname);
-    const target = exact || blobs[0];
-    if (!target || !target.url) return false;
-
-    const response = await fetch(target.url, { cache: 'no-store' });
-    if (!response.ok) return false;
-
+    const response = new Response(result.stream);
     const buffer = Buffer.from(await response.arrayBuffer());
     fs.writeFileSync(dbPath, buffer);
+    storageStatus.restoredFromBlob = true;
+    storageStatus.lastRestoreAt = new Date().toISOString();
+    storageStatus.lastError = '';
     return true;
   } catch (error) {
-    console.warn('[db] Blob restore skipped:', error && error.message ? error.message : String(error));
+    const message = error && error.message ? error.message : String(error);
+    storageStatus.lastError = `restore: ${message}`;
+    console.warn('[db] Blob restore skipped:', message);
     return false;
   }
 }
@@ -54,14 +64,20 @@ async function persistDbNow() {
 
     const data = fs.readFileSync(dbPath);
     await put(blobPathname, data, {
-      access: 'public',
+      access: blobAccess,
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: 'application/octet-stream'
     });
+    storageStatus.lastBackupOk = true;
+    storageStatus.lastBackupAt = new Date().toISOString();
+    storageStatus.lastError = '';
     return true;
   } catch (error) {
-    console.warn('[db] Blob backup failed:', error && error.message ? error.message : String(error));
+    const message = error && error.message ? error.message : String(error);
+    storageStatus.lastBackupOk = false;
+    storageStatus.lastError = `backup: ${message}`;
+    console.warn('[db] Blob backup failed:', message);
     return false;
   }
 }
@@ -223,5 +239,6 @@ module.exports = {
   db,
   initDb,
   scheduleDbBackup,
-  persistDbNow
+  persistDbNow,
+  getStorageStatus: () => ({ ...storageStatus })
 };

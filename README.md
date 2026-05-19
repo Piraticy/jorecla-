@@ -125,6 +125,10 @@ Important:
 - This project now supports automatic SQLite backup/restore using Vercel Blob.
 - Connect a Blob store to your Vercel project (this adds `BLOB_READ_WRITE_TOKEN` automatically).
 - Optional env: `BLOB_DB_PATH=jorecla/pos.db` (default already used if not set).
+- Optional env: `BLOB_ACCESS=private` (recommended for private Blob stores).
+- Check runtime status anytime at `GET /api/health` and inspect `storage` values:
+  - `blobEnabled` should be `true`
+  - `lastBackupOk` should become `true` after you create/update data
 
 ## Notes for Deploying on Any Device
 

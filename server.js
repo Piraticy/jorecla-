@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const packageJson = require('./package.json');
-const { db, initDb, scheduleDbBackup } = require('./src/db');
+const { db, initDb, persistDbNow, getStorageStatus } = require('./src/db');
 const { signToken, authenticate, requireAdmin } = require('./src/auth');
 
 const app = express();
@@ -81,7 +81,7 @@ function ensureSessionUserRow(sessionUser) {
     `INSERT OR REPLACE INTO users (id, name, username, password_hash, role, active)
      VALUES (?, ?, ?, ?, ?, 1)`
   ).run(sessionUser.id, sessionUser.name, String(sessionUser.username).toLowerCase(), fallbackHash, sessionUser.role);
-  scheduleDbBackup();
+  persistDbNow().catch(() => false);
 
   return db
     .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
@@ -143,7 +143,7 @@ app.get('/api/users', authenticate, requireAdmin, (req, res) => {
   return res.json({ users });
 });
 
-app.post('/api/users', authenticate, requireAdmin, (req, res) => {
+app.post('/api/users', authenticate, requireAdmin, async (req, res) => {
   const { name, username, password, role } = req.body || {};
 
   if (!name || !username || !password || !role) {
@@ -164,7 +164,7 @@ app.post('/api/users', authenticate, requireAdmin, (req, res) => {
   const result = db
     .prepare('INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)')
     .run(String(name).trim(), normalizedUsername, passwordHash, role);
-  scheduleDbBackup();
+  await persistDbNow();
 
   const createdUser = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ?')
@@ -173,7 +173,7 @@ app.post('/api/users', authenticate, requireAdmin, (req, res) => {
   return res.status(201).json({ user: createdUser });
 });
 
-app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res) => {
+app.post('/api/users/:id/reset-password', authenticate, requireAdmin, async (req, res) => {
   const targetId = Number(req.params.id);
   if (!Number.isInteger(targetId) || targetId <= 0) {
     return res.status(400).json({ error: 'Invalid user id' });
@@ -200,7 +200,7 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res)
 
   const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, target.id);
-  scheduleDbBackup();
+  await persistDbNow();
 
   return res.json({
     user: {
@@ -213,7 +213,7 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res)
   });
 });
 
-app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
+app.put('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
   const targetId = Number(req.params.id);
   if (!Number.isInteger(targetId) || targetId <= 0) {
     return res.status(400).json({ error: 'Invalid user id' });
@@ -262,7 +262,7 @@ app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
 
   params.push(target.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-  scheduleDbBackup();
+  await persistDbNow();
 
   const updated = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ? LIMIT 1')
@@ -270,7 +270,7 @@ app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
   return res.json({ user: updated });
 });
 
-app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
+app.delete('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
   const targetId = Number(req.params.id);
   if (!Number.isInteger(targetId) || targetId <= 0) {
     return res.status(400).json({ error: 'Invalid user id' });
@@ -296,7 +296,7 @@ app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
   });
   runDelete();
-  scheduleDbBackup();
+  await persistDbNow();
 
   return res.json({ ok: true });
 });
@@ -314,7 +314,7 @@ app.get('/api/categories', authenticate, (req, res) => {
   return res.json({ categories: rows });
 });
 
-app.post('/api/categories', authenticate, requireAdmin, (req, res) => {
+app.post('/api/categories', authenticate, requireAdmin, async (req, res) => {
   const { name, type } = req.body || {};
   if (!name || !type) {
     return res.status(400).json({ error: 'name and type are required' });
@@ -325,7 +325,7 @@ app.post('/api/categories', authenticate, requireAdmin, (req, res) => {
   }
 
   const result = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)').run(String(name).trim(), type);
-  scheduleDbBackup();
+  await persistDbNow();
   const category = db
     .prepare('SELECT id, name, type, created_at FROM categories WHERE id = ? LIMIT 1')
     .get(result.lastInsertRowid);
@@ -333,7 +333,7 @@ app.post('/api/categories', authenticate, requireAdmin, (req, res) => {
   return res.status(201).json({ category });
 });
 
-app.post('/api/transactions', authenticate, (req, res) => {
+app.post('/api/transactions', authenticate, async (req, res) => {
   const {
     type,
     itemType,
@@ -418,7 +418,7 @@ app.post('/api/transactions', authenticate, (req, res) => {
       safeReceiptNo,
       safeDate
     );
-  scheduleDbBackup();
+  await persistDbNow();
 
   const transaction = db
     .prepare(`
@@ -566,7 +566,7 @@ app.get('/api/reports/summary', authenticate, (req, res) => {
   });
 });
 
-app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
+app.put('/api/transactions/:id', authenticate, requireAdmin, async (req, res) => {
   const transactionId = Number(req.params.id);
   if (!Number.isInteger(transactionId) || transactionId <= 0) {
     return res.status(400).json({ error: 'Invalid transaction id' });
@@ -622,7 +622,7 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
     safeDate,
     transactionId
   );
-  scheduleDbBackup();
+  await persistDbNow();
 
   const transaction = db
     .prepare(
@@ -653,7 +653,21 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  return res.json({ ok: true, time: new Date().toISOString() });
+  const storage = getStorageStatus();
+  return res.json({
+    ok: true,
+    time: new Date().toISOString(),
+    storage: {
+      blobEnabled: storage.blobEnabled,
+      blobPathname: storage.blobPathname,
+      blobAccess: storage.blobAccess,
+      restoredFromBlob: storage.restoredFromBlob,
+      lastRestoreAt: storage.lastRestoreAt,
+      lastBackupAt: storage.lastBackupAt,
+      lastBackupOk: storage.lastBackupOk,
+      lastError: storage.lastError
+    }
+  });
 });
 
 app.get('/api/version', (_req, res) => {
@@ -661,6 +675,10 @@ app.get('/api/version', (_req, res) => {
     version: buildVersion,
     app: packageJson.name
   });
+});
+
+app.get('/api/storage/status', authenticate, requireAdmin, (_req, res) => {
+  return res.json(getStorageStatus());
 });
 
 app.get('/', (_req, res) => {
