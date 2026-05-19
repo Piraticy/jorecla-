@@ -1,4 +1,5 @@
 const DESCRIPTION_HISTORY_KEY = 'pos_desc_history';
+const ACK_UPDATE_VERSION_KEY = 'pos_ack_update_version';
 
 const state = {
   token: localStorage.getItem('pos_token') || '',
@@ -215,6 +216,10 @@ function showUpdateOverlay() {
 async function handleUpdateNowClick() {
   if (state.isUpdatingNow) return;
   state.isUpdatingNow = true;
+  if (state.latestVersion) {
+    localStorage.setItem(ACK_UPDATE_VERSION_KEY, state.latestVersion);
+    state.appVersion = state.latestVersion;
+  }
   hideUpdateOverlay();
 
   const originalText = el.updateNowBtn.textContent;
@@ -247,6 +252,18 @@ async function checkVersionOnce() {
     }
 
     state.latestVersion = data.version;
+    const ackVersion = localStorage.getItem(ACK_UPDATE_VERSION_KEY) || '';
+
+    if (state.appVersion === state.latestVersion) {
+      if (ackVersion) localStorage.removeItem(ACK_UPDATE_VERSION_KEY);
+      hideUpdateOverlay();
+      return;
+    }
+
+    if (ackVersion && ackVersion === state.latestVersion) {
+      hideUpdateOverlay();
+      return;
+    }
 
     if (state.appVersion !== state.latestVersion) {
       showUpdateOverlay();
@@ -734,7 +751,15 @@ el.categoryForm.addEventListener('submit', async (event) => {
   startAutoRefresh();
   checkVersionOnce();
 
+  window.forceAppUpdate = handleUpdateNowClick;
+  el.updateNowBtn.onclick = handleUpdateNowClick;
   el.updateNowBtn.addEventListener('click', handleUpdateNowClick);
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target && target.id === 'update-now-btn') {
+      handleUpdateNowClick();
+    }
+  });
 
   if (!state.token) return;
 
