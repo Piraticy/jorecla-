@@ -31,6 +31,7 @@ A straightforward POS and finance tracking system for:
 - Built-in version check that prompts/forces refresh when a newer deployment is detected
 - Mobile-first polished UI with PWA metadata and home-screen icon support
 - SQLite database for persistent local data
+- Vercel Blob backup support so users/transactions can survive deployments on Vercel
 
 ## Tech Stack
 
@@ -119,7 +120,11 @@ vercel
 vercel --prod
 ```
 
-Important: SQLite on Vercel uses temporary filesystem (`/tmp`), so data can reset. For stable production data, use a managed database (for example Neon, Supabase, or Vercel Postgres).
+Important:
+- Vercel server filesystem is temporary (`/tmp`), so plain SQLite can reset on deploy/cold start.
+- This project now supports automatic SQLite backup/restore using Vercel Blob.
+- Connect a Blob store to your Vercel project (this adds `BLOB_READ_WRITE_TOKEN` automatically).
+- Optional env: `BLOB_DB_PATH=jorecla/pos.db` (default already used if not set).
 
 ## Notes for Deploying on Any Device
 

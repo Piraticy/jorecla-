@@ -3,18 +3,115 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 
-const dataDir = process.env.VERCEL === '1' ? '/tmp' : path.join(__dirname, '..', 'data');
+const isVercel = process.env.VERCEL === '1';
+const dataDir = isVercel ? '/tmp' : path.join(__dirname, '..', 'data');
+const dbPath = path.join(dataDir, 'pos.db');
+
+const blobEnabled = isVercel && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const blobPathname = process.env.BLOB_DB_PATH || 'jorecla/pos.db';
+
+let dbInstance = null;
+let backupTimer = null;
+let backupInFlight = null;
+
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const dbPath = path.join(dataDir, 'pos.db');
-const db = new Database(dbPath);
+async function restoreDbFromBlob() {
+  if (!blobEnabled) return false;
 
-db.pragma('journal_mode = WAL');
+  try {
+    const { list } = require('@vercel/blob');
+    const listed = await list({ prefix: blobPathname, limit: 1000 });
+    const blobs = listed && Array.isArray(listed.blobs) ? listed.blobs : [];
 
-function initDb() {
-  db.exec(`
+    const exact = blobs.find((item) => item.pathname === blobPathname);
+    const target = exact || blobs[0];
+    if (!target || !target.url) return false;
+
+    const response = await fetch(target.url, { cache: 'no-store' });
+    if (!response.ok) return false;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    fs.writeFileSync(dbPath, buffer);
+    return true;
+  } catch (error) {
+    console.warn('[db] Blob restore skipped:', error && error.message ? error.message : String(error));
+    return false;
+  }
+}
+
+async function persistDbNow() {
+  if (!blobEnabled || !dbInstance) return false;
+  if (!fs.existsSync(dbPath)) return false;
+
+  try {
+    const { put } = require('@vercel/blob');
+
+    // Ensure WAL pages are merged into the main DB file before upload.
+    dbInstance.pragma('wal_checkpoint(TRUNCATE)');
+
+    const data = fs.readFileSync(dbPath);
+    await put(blobPathname, data, {
+      access: 'public',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/octet-stream'
+    });
+    return true;
+  } catch (error) {
+    console.warn('[db] Blob backup failed:', error && error.message ? error.message : String(error));
+    return false;
+  }
+}
+
+function scheduleDbBackup() {
+  if (!blobEnabled || !dbInstance) return;
+
+  if (backupTimer) return;
+  backupTimer = setTimeout(() => {
+    backupTimer = null;
+    if (backupInFlight) return;
+
+    backupInFlight = persistDbNow()
+      .catch(() => false)
+      .finally(() => {
+        backupInFlight = null;
+      });
+  }, 500);
+}
+
+function openDb() {
+  if (dbInstance) return dbInstance;
+  dbInstance = new Database(dbPath);
+  dbInstance.pragma('journal_mode = WAL');
+  return dbInstance;
+}
+
+function getDb() {
+  if (!dbInstance) {
+    throw new Error('Database not initialized. Call initDb() first.');
+  }
+  return dbInstance;
+}
+
+const db = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      const instance = getDb();
+      const value = instance[prop];
+      return typeof value === 'function' ? value.bind(instance) : value;
+    }
+  }
+);
+
+async function initDb() {
+  await restoreDbFromBlob();
+  const instance = openDb();
+
+  instance.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -63,16 +160,21 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
   `);
 
-  const adminExists = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
+  let seeded = false;
+
+  const adminExists = instance.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
   if (!adminExists) {
     const passwordHash = bcrypt.hashSync('admin123', 10);
-    db.prepare(`
-      INSERT INTO users (name, username, password_hash, role)
-      VALUES (?, ?, ?, 'admin')
-    `).run('System Admin', 'admin', passwordHash);
+    instance
+      .prepare(`
+        INSERT INTO users (name, username, password_hash, role)
+        VALUES (?, ?, ?, 'admin')
+      `)
+      .run('System Admin', 'admin', passwordHash);
+    seeded = true;
   }
 
-  const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
+  const categoryCount = instance.prepare('SELECT COUNT(*) as count FROM categories').get().count;
   if (categoryCount === 0) {
     const defaultCategories = [
       ['Spare Sales', 'income'],
@@ -86,13 +188,14 @@ function initDb() {
       ['Other Expense', 'expense']
     ];
 
-    const insertCategory = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)');
-    const insertMany = db.transaction((rows) => {
+    const insertCategory = instance.prepare('INSERT INTO categories (name, type) VALUES (?, ?)');
+    const insertMany = instance.transaction((rows) => {
       for (const row of rows) {
         insertCategory.run(row[0], row[1]);
       }
     });
     insertMany(defaultCategories);
+    seeded = true;
   }
 
   const renameMap = [
@@ -106,13 +209,19 @@ function initDb() {
     ['Mishahara', 'Salaries'],
     ['Matumizi Mengine', 'Other Expense']
   ];
-  const renameStmt = db.prepare('UPDATE categories SET name = ? WHERE name = ?');
+  const renameStmt = instance.prepare('UPDATE categories SET name = ? WHERE name = ?');
   for (const [oldName, newName] of renameMap) {
     renameStmt.run(newName, oldName);
+  }
+
+  if (seeded) {
+    await persistDbNow();
   }
 }
 
 module.exports = {
   db,
-  initDb
+  initDb,
+  scheduleDbBackup,
+  persistDbNow
 };

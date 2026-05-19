@@ -255,7 +255,8 @@ async function handleUpdateNowClick(event) {
 
 async function checkVersionOnce() {
   try {
-    if (!state.token || !el.loginView.classList.contains('hidden')) {
+    // Keep update prompt on login view only.
+    if (el.loginView.classList.contains('hidden')) {
       hideUpdateOverlay();
       return;
     }

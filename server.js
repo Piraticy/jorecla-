@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const packageJson = require('./package.json');
-const { db, initDb } = require('./src/db');
+const { db, initDb, scheduleDbBackup } = require('./src/db');
 const { signToken, authenticate, requireAdmin } = require('./src/auth');
 
 const app = express();
@@ -15,11 +15,9 @@ const buildVersion =
   process.env.RENDER_GIT_COMMIT ||
   packageJson.version;
 
-initDb();
-
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 function normalizeMoney(value) {
   const num = Number(value);
@@ -72,6 +70,7 @@ function ensureSessionUserRow(sessionUser) {
     `INSERT OR REPLACE INTO users (id, name, username, password_hash, role, active)
      VALUES (?, ?, ?, ?, ?, 1)`
   ).run(sessionUser.id, sessionUser.name, String(sessionUser.username).toLowerCase(), fallbackHash, sessionUser.role);
+  scheduleDbBackup();
 
   return db
     .prepare('SELECT id, name, username, role, active FROM users WHERE id = ? LIMIT 1')
@@ -154,6 +153,7 @@ app.post('/api/users', authenticate, requireAdmin, (req, res) => {
   const result = db
     .prepare('INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)')
     .run(String(name).trim(), normalizedUsername, passwordHash, role);
+  scheduleDbBackup();
 
   const createdUser = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ?')
@@ -189,6 +189,7 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, (req, res)
 
   const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, target.id);
+  scheduleDbBackup();
 
   return res.json({
     user: {
@@ -250,6 +251,7 @@ app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
 
   params.push(target.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+  scheduleDbBackup();
 
   const updated = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ? LIMIT 1')
@@ -283,6 +285,7 @@ app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
   });
   runDelete();
+  scheduleDbBackup();
 
   return res.json({ ok: true });
 });
@@ -311,6 +314,7 @@ app.post('/api/categories', authenticate, requireAdmin, (req, res) => {
   }
 
   const result = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)').run(String(name).trim(), type);
+  scheduleDbBackup();
   const category = db
     .prepare('SELECT id, name, type, created_at FROM categories WHERE id = ? LIMIT 1')
     .get(result.lastInsertRowid);
@@ -403,6 +407,7 @@ app.post('/api/transactions', authenticate, (req, res) => {
       safeReceiptNo,
       safeDate
     );
+  scheduleDbBackup();
 
   const transaction = db
     .prepare(`
@@ -606,6 +611,7 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, (req, res) => {
     safeDate,
     transactionId
   );
+  scheduleDbBackup();
 
   const transaction = db
     .prepare(
@@ -646,10 +652,28 @@ app.get('/api/version', (_req, res) => {
   });
 });
 
-app.use((_req, res) => {
+app.get('/', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(port, () => {
-  console.log(`POS system running on http://localhost:${port}`);
+app.use((_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+async function startServer() {
+  await initDb();
+  app.listen(port, () => {
+    console.log(`POS system running on http://localhost:${port}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
