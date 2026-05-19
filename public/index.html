@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260519g" />
+    <link rel="stylesheet" href="/styles.css?v=20260519h" />
   </head>
   <body class="login-mode">
     <div class="page-bg"></div>
@@ -91,7 +91,7 @@
           </form>
         </section>
 
-        <section class="card">
+        <section class="card" id="new-transaction-card">
           <h3>New Transaction</h3>
           <form id="transaction-form" class="form-grid row-4">
             <label>
@@ -207,7 +207,7 @@
           <p id="category-feedback" class="success"></p>
         </section>
 
-        <section class="card">
+        <section class="card" id="transactions-card">
           <h3 id="transactions-title">Today's Transactions</h3>
           <div class="table-wrap">
             <table>
@@ -229,6 +229,13 @@
           </div>
         </section>
       </section>
+
+      <nav id="mobile-staff-bar" class="mobile-staff-bar hidden" aria-label="Mobile staff quick actions">
+        <button id="mobile-action-new" type="button">New</button>
+        <button id="mobile-action-today" type="button">Today</button>
+        <button id="mobile-action-refresh" type="button" class="secondary">Refresh</button>
+        <button id="mobile-action-logout" type="button" class="danger">Logout</button>
+      </nav>
     </main>
 
     <div id="update-overlay" class="update-overlay hidden">
@@ -246,6 +253,6 @@
       </div>
     </div>
 
-    <script src="/app.js?v=20260519g"></script>
+    <script src="/app.js?v=20260519h"></script>
   </body>
 </html>

@@ -327,6 +327,28 @@ body:not(.login-mode) .update-overlay {
   display: none !important;
 }
 
+.mobile-staff-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: none;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(215, 230, 235, 0.84), rgba(198, 217, 225, 0.96));
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(141, 168, 186, 0.4);
+}
+
+.mobile-staff-bar button {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  box-shadow: 0 8px 16px rgba(16, 43, 63, 0.18);
+}
+
 @media (max-width: 1050px) {
   .form-grid.row-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -393,7 +415,7 @@ body:not(.login-mode) .update-overlay {
   }
 
   #app-view {
-    padding-bottom: 96px;
+    padding-bottom: 126px;
   }
 
   .form-grid.row-4 {
@@ -429,5 +451,9 @@ body:not(.login-mode) .update-overlay {
   .row-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  body.staff-mode #mobile-staff-bar:not(.hidden) {
+    display: grid;
   }
 }

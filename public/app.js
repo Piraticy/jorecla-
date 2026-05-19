@@ -26,6 +26,11 @@ const el = {
   welcomeText: document.getElementById('welcome-text'),
   refreshBtn: document.getElementById('refresh-btn'),
   logoutBtn: document.getElementById('logout-btn'),
+  mobileStaffBar: document.getElementById('mobile-staff-bar'),
+  mobileActionNew: document.getElementById('mobile-action-new'),
+  mobileActionToday: document.getElementById('mobile-action-today'),
+  mobileActionRefresh: document.getElementById('mobile-action-refresh'),
+  mobileActionLogout: document.getElementById('mobile-action-logout'),
   totalIncome: document.getElementById('total-income'),
   totalExpense: document.getElementById('total-expense'),
   totalBalance: document.getElementById('total-balance'),
@@ -65,6 +70,8 @@ const el = {
   categoryFeedback: document.getElementById('category-feedback'),
   transactionsTitle: document.getElementById('transactions-title'),
   transactionsTableBody: document.getElementById('transactions-table-body'),
+  newTransactionCard: document.getElementById('new-transaction-card'),
+  transactionsCard: document.getElementById('transactions-card'),
   updateOverlay: document.getElementById('update-overlay'),
   updateCountdown: document.getElementById('update-countdown'),
   updateNowBtn: document.getElementById('update-now-btn')
@@ -311,11 +318,13 @@ function applyRoleView() {
     el.archiveCard.classList.remove('hidden');
     el.usersCard.classList.remove('hidden');
     el.categoriesCard.classList.remove('hidden');
+    el.mobileStaffBar.classList.add('hidden');
   } else {
     document.body.classList.add('staff-mode');
     el.archiveCard.classList.add('hidden');
     el.usersCard.classList.add('hidden');
     el.categoriesCard.classList.add('hidden');
+    el.mobileStaffBar.classList.remove('hidden');
   }
 }
 
@@ -630,6 +639,22 @@ el.logoutBtn.addEventListener('click', () => {
 
 el.refreshBtn.addEventListener('click', async () => {
   await refreshAll();
+});
+
+el.mobileActionNew.addEventListener('click', () => {
+  el.newTransactionCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+el.mobileActionToday.addEventListener('click', () => {
+  el.transactionsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+el.mobileActionRefresh.addEventListener('click', async () => {
+  await refreshAll();
+});
+
+el.mobileActionLogout.addEventListener('click', () => {
+  el.logoutBtn.click();
 });
 
 el.archiveToggle.addEventListener('change', async () => {
