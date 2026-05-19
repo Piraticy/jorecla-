@@ -88,6 +88,18 @@ function ensureSessionUserRow(sessionUser) {
     .get(sessionUser.id);
 }
 
+async function persistOrAbort(res) {
+  const status = getStorageStatus();
+  if (!status.blobEnabled) return true;
+  const ok = await persistDbNow();
+  if (ok) return true;
+  const latest = getStorageStatus();
+  res.status(500).json({
+    error: `Persistent save failed. ${latest.lastError || 'Please check Blob configuration and redeploy.'}`
+  });
+  return false;
+}
+
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -164,7 +176,7 @@ app.post('/api/users', authenticate, requireAdmin, async (req, res) => {
   const result = db
     .prepare('INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)')
     .run(String(name).trim(), normalizedUsername, passwordHash, role);
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   const createdUser = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ?')
@@ -200,7 +212,7 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, async (req
 
   const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, target.id);
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   return res.json({
     user: {
@@ -262,7 +274,7 @@ app.put('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
 
   params.push(target.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   const updated = db
     .prepare('SELECT id, name, username, role, active, created_at FROM users WHERE id = ? LIMIT 1')
@@ -296,7 +308,7 @@ app.delete('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
   });
   runDelete();
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   return res.json({ ok: true });
 });
@@ -325,7 +337,7 @@ app.post('/api/categories', authenticate, requireAdmin, async (req, res) => {
   }
 
   const result = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)').run(String(name).trim(), type);
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
   const category = db
     .prepare('SELECT id, name, type, created_at FROM categories WHERE id = ? LIMIT 1')
     .get(result.lastInsertRowid);
@@ -418,7 +430,7 @@ app.post('/api/transactions', authenticate, async (req, res) => {
       safeReceiptNo,
       safeDate
     );
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   const transaction = db
     .prepare(`
@@ -622,7 +634,7 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, async (req, res) =>
     safeDate,
     transactionId
   );
-  await persistDbNow();
+  if (!(await persistOrAbort(res))) return;
 
   const transaction = db
     .prepare(
@@ -665,7 +677,8 @@ app.get('/api/health', (_req, res) => {
       lastRestoreAt: storage.lastRestoreAt,
       lastBackupAt: storage.lastBackupAt,
       lastBackupOk: storage.lastBackupOk,
-      lastError: storage.lastError
+      lastError: storage.lastError,
+      backupAttempts: storage.backupAttempts
     }
   });
 });

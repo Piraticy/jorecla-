@@ -22,7 +22,8 @@ const storageStatus = {
   lastRestoreAt: '',
   lastBackupAt: '',
   lastBackupOk: false,
-  lastError: ''
+  lastError: '',
+  backupAttempts: 0
 };
 
 if (!fs.existsSync(dataDir)) {
@@ -53,16 +54,23 @@ async function restoreDbFromBlob() {
 }
 
 async function persistDbNow() {
-  if (!blobEnabled || !dbInstance) return false;
-  if (!fs.existsSync(dbPath)) return false;
+  storageStatus.backupAttempts += 1;
+  if (!blobEnabled || !dbInstance) {
+    storageStatus.lastBackupOk = false;
+    storageStatus.lastError = 'backup: blob not enabled or db not ready';
+    return false;
+  }
 
   try {
     const { put } = require('@vercel/blob');
-
-    // Ensure WAL pages are merged into the main DB file before upload.
-    dbInstance.pragma('wal_checkpoint(TRUNCATE)');
-
-    const data = fs.readFileSync(dbPath);
+    const backupPath = path.join(dataDir, 'pos-backup.db');
+    await dbInstance.backup(backupPath);
+    if (!fs.existsSync(backupPath)) {
+      storageStatus.lastBackupOk = false;
+      storageStatus.lastError = 'backup: sqlite snapshot file was not created';
+      return false;
+    }
+    const data = fs.readFileSync(backupPath);
     await put(blobPathname, data, {
       access: blobAccess,
       addRandomSuffix: false,
