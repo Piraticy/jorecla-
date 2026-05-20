@@ -1,5 +1,7 @@
 const DESCRIPTION_HISTORY_KEY = 'pos_desc_history';
 const ACK_UPDATE_VERSION_KEY = 'pos_ack_update_version';
+const FORCE_REFRESH_KEY = 'pos_force_refresh_version';
+const CLIENT_BUILD_VERSION = '20260520-final';
 
 const state = {
   token: localStorage.getItem('pos_token') || '',
@@ -13,7 +15,8 @@ const state = {
   appVersion: '',
   latestVersion: '',
   updateTimer: null,
-  isUpdatingNow: false
+  isUpdatingNow: false,
+  refreshSeq: 0
 };
 
 const el = {
@@ -84,11 +87,16 @@ const tanzaniaCurrency = new Intl.NumberFormat('en-TZ', {
 });
 
 function todayISO() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Dar_es_Salaam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
 }
 
 function isAdmin() {
@@ -262,9 +270,21 @@ async function handleUpdateNowClick(event) {
 
 async function checkVersionOnce() {
   try {
-    // Update popup disabled to prevent sticky modal regressions.
+    const response = await fetch(`/api/version?ts=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    const remoteVersion = String(data.version || '').trim();
+    if (!remoteVersion) return;
+
+    const lastForced = localStorage.getItem(FORCE_REFRESH_KEY) || '';
+    const forceKey = `${remoteVersion}:${CLIENT_BUILD_VERSION}`;
+    if (lastForced !== forceKey) {
+      localStorage.setItem(FORCE_REFRESH_KEY, forceKey);
+      forceReload();
+      return;
+    }
+
     hideUpdateOverlay();
-    return;
   } catch (_error) {
     // no-op
   }
@@ -326,6 +346,11 @@ function applyRoleView() {
     el.categoriesCard.classList.add('hidden');
     el.mobileStaffBar.classList.remove('hidden');
   }
+}
+
+function nextRefreshSeq() {
+  state.refreshSeq += 1;
+  return state.refreshSeq;
 }
 
 function updateTransactionsTitle() {
@@ -405,7 +430,7 @@ function renderTransactions() {
 
         el.txnFeedback.classList.remove('error');
         el.txnFeedback.textContent = 'Transaction updated.';
-        await Promise.all([loadTransactions(), loadSummary()]);
+        await refreshAll();
       } catch (error) {
         el.txnFeedback.classList.add('error');
         el.txnFeedback.textContent = error.message;
@@ -544,18 +569,20 @@ async function loadUsersIfAdmin() {
   renderUsers();
 }
 
-async function loadSummary() {
+async function loadSummary(refreshSeq) {
   const query = queryForDateFilter();
   const data = await api(`/api/reports/summary?${query.toString()}`);
+  if (refreshSeq !== state.refreshSeq) return;
 
   el.totalIncome.textContent = currency(data.totals.income);
   el.totalExpense.textContent = currency(data.totals.expense);
   el.totalBalance.textContent = currency(data.totals.balance);
 }
 
-async function loadTransactions() {
+async function loadTransactions(refreshSeq) {
   const query = queryForDateFilter();
   const data = await api(`/api/transactions?${query.toString()}`);
+  if (refreshSeq !== state.refreshSeq) return;
   state.transactions = data.transactions;
   mergeDescriptionsFromTransactions();
   renderTransactions();
@@ -568,8 +595,9 @@ async function loadCategories() {
 }
 
 async function refreshAll() {
+  const refreshSeq = nextRefreshSeq();
   updateTransactionsTitle();
-  await Promise.all([loadTransactions(), loadSummary(), loadUsersIfAdmin()]);
+  await Promise.all([loadTransactions(refreshSeq), loadSummary(refreshSeq), loadUsersIfAdmin()]);
 }
 
 function startAutoRefresh() {
@@ -713,7 +741,7 @@ el.transactionForm.addEventListener('submit', async (event) => {
     setSuggestedDate();
     updateCategoryOptions();
 
-    await Promise.all([loadTransactions(), loadSummary()]);
+    await refreshAll();
   } catch (error) {
     el.txnFeedback.textContent = error.message;
     el.txnFeedback.classList.add('error');
@@ -722,7 +750,7 @@ el.transactionForm.addEventListener('submit', async (event) => {
 
 el.filterForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  await Promise.all([loadTransactions(), loadSummary()]);
+  await refreshAll();
 });
 
 el.userForm.addEventListener('submit', async (event) => {

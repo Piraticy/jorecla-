@@ -183,6 +183,12 @@ select:focus {
   border-color: #8ab7cc;
 }
 
+input[type='date'] {
+  line-height: 1.2;
+  padding-right: 40px;
+  font-variant-numeric: tabular-nums;
+}
+
 button {
   cursor: pointer;
   border: 0;
@@ -299,9 +305,8 @@ body.staff-mode #admin-categories-card {
 }
 
 body.staff-mode #stats-card,
-body.staff-mode #stats-card article {
-  border-radius: 14px;
-  box-shadow: none;
+body.staff-mode .header-actions {
+  display: none !important;
 }
 
 .update-overlay {
@@ -396,6 +401,12 @@ body:not(.login-mode) .update-overlay {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  body.staff-mode .header-card {
+    position: static;
+    top: auto;
+    backdrop-filter: none;
   }
 
   .header-actions {
