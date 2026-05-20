@@ -99,6 +99,17 @@ function todayISO() {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeInputDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+  const [, y, m, d] = match;
+  const dt = new Date(`${y}-${m}-${d}T00:00:00Z`);
+  if (Number.isNaN(dt.getTime())) return '';
+  return `${y}-${m}-${d}`;
+}
+
 function isAdmin() {
   return state.user && state.user.role === 'admin';
 }
@@ -717,6 +728,10 @@ el.transactionForm.addEventListener('submit', async (event) => {
 
   try {
     const description = el.txnDescription.value.trim();
+    const safeDate = normalizeInputDate(el.txnDate.value) || state.suggestedDate;
+    if (!safeDate) {
+      throw new Error('Use date format YYYY-MM-DD');
+    }
 
     await api('/api/transactions', {
       method: 'POST',
@@ -729,7 +744,7 @@ el.transactionForm.addEventListener('submit', async (event) => {
         unitPrice: el.txnUnitPrice.value,
         amount: el.txnAmount.value,
         receiptNo: el.txnReceipt.value.trim(),
-        transactionDate: el.txnDate.value || state.suggestedDate
+        transactionDate: safeDate
       })
     });
 

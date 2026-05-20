@@ -58,6 +58,17 @@ function localDateISO(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeISODateInput(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return localDateISO();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const dt = new Date(`${y}-${m}-${d}T00:00:00Z`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return `${y}-${m}-${d}`;
+}
+
 function resolveDateRange(query, role) {
   const includeArchive = role === 'admin' && String(query.includeArchive || '0') === '1';
   let from = query.from ? String(query.from).trim() : '';
@@ -404,7 +415,10 @@ app.post('/api/transactions', authenticate, async (req, res) => {
   }
 
   const safeReceiptNo = String(receiptNo || '').trim() || `RCPT-${Date.now()}`;
-  const safeDate = String(transactionDate || '').trim() || new Date().toISOString().slice(0, 10);
+  const safeDate = normalizeISODateInput(transactionDate);
+  if (!safeDate) {
+    return res.status(400).json({ error: 'transactionDate must be YYYY-MM-DD' });
+  }
 
   const result = db
     .prepare(`
@@ -622,7 +636,10 @@ app.put('/api/transactions/:id', authenticate, requireAdmin, async (req, res) =>
   }
 
   const safeReceiptNo = String(receiptNo || '').trim() || `RCPT-${Date.now()}`;
-  const safeDate = String(transactionDate || '').trim() || localDateISO();
+  const safeDate = normalizeISODateInput(transactionDate);
+  if (!safeDate) {
+    return res.status(400).json({ error: 'transactionDate must be YYYY-MM-DD' });
+  }
 
   db.prepare(
     `UPDATE transactions
